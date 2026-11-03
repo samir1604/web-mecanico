@@ -14,3 +14,14 @@ export const redirectTo = (location: string): Response =>
     status: 303,
     headers: { ...noStore, Location: location },
   });
+
+/** Responde JSON o vuelve al formulario con el mensaje ya codificado. */
+export const respondWithError = (
+  respondJson: boolean,
+  detailUrl: string,
+  message: string,
+  status: number,
+): Response =>
+  respondJson
+    ? json({ error: message }, status)
+    : redirectTo(`${detailUrl}?error=${encodeURIComponent(message)}`);

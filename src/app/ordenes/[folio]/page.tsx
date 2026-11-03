@@ -52,9 +52,7 @@ export default async function OrderDetailPage({
   if (!order) notFound();
 
   const terminal = isTerminalStatus(order.status);
-  const pendingQuote = order.quotes.find(
-    (quote) => quote.status === "pendiente",
-  );
+  const pendingQuote = await getWorkshop().findActiveQuote(folio);
   const nextStatuses = ORDER_STATUSES.filter(
     (status) => status !== order.status,
   );

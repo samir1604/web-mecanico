@@ -1,6 +1,8 @@
 import { describe, expect, test } from "vitest";
 
-import { parseMoneyToCents, parseQuoteForm } from "./quote-form";
+import { parseMoneyToCents } from "@/workshop/money";
+
+import { parseQuoteForm } from "./quote-form";
 
 const formWith = (rows: Array<[string, string]>): FormData => {
   const form = new FormData();

@@ -16,8 +16,8 @@
 ## Notas de implementación
 
 - El formulario del detalle permite agregar y quitar partidas, capturar el precio en dólares y ver el total antes de guardar. El total que se persiste siempre lo calcula el dominio en centavos.
-- `parseMoneyToCents` acepta `1,234.50`, `$1234.5` y `12`, y rechaza negativos o más de dos decimales. La validación vive en `src/http/quote-form.ts`.
+- `parseMoneyToCents` acepta `1,234.50`, `$1234.5` y `12`, y rechaza negativos o más de dos decimales. La conversión vive en `src/workshop/money.ts`; la validación del formulario, en `src/http/quote-form.ts`.
 - `POST /api/orders/[folio]/quotes` exige sesión, responde `201` con la cotización o redirige al detalle con `?cotizacion=1`; los errores de dominio se traducen en un solo lugar (`src/http/domain-errors.ts`).
 - Una orden terminal no se puede cotizar: primero debe reabrirse con una corrección explícita.
-- La proyección pública incluye solo la cotización pendiente, con versión, partidas, total y vigencia. No expone cotizaciones reemplazadas ni datos internos.
+- La proyección pública incluye solo la cotización vigente, con versión, partidas, total y vencimiento. Si la pendiente vence, se oculta y el dueño puede crear otra; nunca se expone una reemplazada ni datos internos.
 - `formatMoney` ahora presenta `$1,234.00 USD` en todo el producto.

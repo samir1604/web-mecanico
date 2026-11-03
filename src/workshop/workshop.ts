@@ -49,6 +49,14 @@ const totalOf = (items: LineItem[]): number =>
 const isExpired = (quote: Quote, now: Date): boolean =>
   now.getTime() >= new Date(quote.expiresAt).getTime();
 
+/** La cotización vigente es la última pendiente que aún no vence. */
+const activePendingQuote = (order: Order, now: Date): Quote | undefined =>
+  [...order.quotes]
+    .reverse()
+    .find(
+      (quote) => quote.status === "pendiente" && !isExpired(quote, now),
+    );
+
 const normalizeSearch = (value: string): string =>
   value
     .normalize("NFD")
@@ -161,9 +169,7 @@ export function createWorkshop({ store, clock, ids }: WorkshopDeps) {
         );
       }
 
-      const pending = order.quotes.find(
-        (quote) => quote.status === "pendiente",
-      );
+      const pending = activePendingQuote(order, clock.now());
 
       return {
         folio: order.folio,
@@ -190,6 +196,12 @@ export function createWorkshop({ store, clock, ids }: WorkshopDeps) {
 
     async findByFolio(folio: string): Promise<Order | null> {
       return store.getByFolio(folio);
+    },
+
+    async findActiveQuote(folio: string): Promise<Quote | null> {
+      const order = await load(folio);
+      const quote = activePendingQuote(order, clock.now());
+      return quote ? structuredClone(quote) : null;
     },
 
     async listOrders(): Promise<Order[]> {
@@ -277,9 +289,7 @@ export function createWorkshop({ store, clock, ids }: WorkshopDeps) {
       }
 
       const now = clock.now();
-      const pending = order.quotes.find(
-        (quote) => quote.status === "pendiente" && !isExpired(quote, now),
-      );
+      const pending = activePendingQuote(order, now);
       if (pending) {
         throw new DomainError(
           "INVALID_TRANSITION",

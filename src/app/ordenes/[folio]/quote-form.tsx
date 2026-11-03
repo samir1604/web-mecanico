@@ -2,8 +2,8 @@
 
 import { useRef, useState } from "react";
 
-import { parseMoneyToCents } from "@/http/quote-form";
 import { formatMoney } from "@/ui/format";
+import { parseMoneyToCents } from "@/workshop/money";
 
 interface Row {
   id: number;

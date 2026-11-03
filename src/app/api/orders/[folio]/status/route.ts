@@ -1,6 +1,12 @@
 import { sessionFromRequest } from "@/auth/session";
 import { httpStatusFor } from "@/http/domain-errors";
-import { json, redirectTo, unauthorized, wantsJson } from "@/http/responses";
+import {
+  json,
+  redirectTo,
+  respondWithError,
+  unauthorized,
+  wantsJson,
+} from "@/http/responses";
 import { parseStatusChange } from "@/http/status-form";
 import { getWorkshop } from "@/service";
 import { isDomainError } from "@/workshop/errors";
@@ -17,10 +23,8 @@ export async function POST(
   const respondJson = wantsJson(request);
   const detailUrl = `/ordenes/${encodeURIComponent(folio)}`;
 
-  const fail = (message: string, status: number) => {
-    if (respondJson) return json({ error: message }, status);
-    return redirectTo(`${detailUrl}?error=${encodeURIComponent(message)}`);
-  };
+  const fail = (message: string, status: number) =>
+    respondWithError(respondJson, detailUrl, message, status);
 
   if ("error" in input) {
     return fail(input.error, 422);

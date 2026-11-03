@@ -340,6 +340,50 @@ describe("enlace público", () => {
     });
   });
 
+  test("la vista pública solo muestra la cotización vigente", async () => {
+    const { workshop } = publicWorkshop();
+    const created = await workshop.createOrder(input);
+    await workshop.createQuote(created.folio, items);
+
+    await workshop.editQuote(created.folio, 1, [
+      { concept: "Alineación", priceCents: 35050 },
+    ]);
+
+    const publicOrder = await workshop.publicOrderByToken(created.token);
+
+    expect(publicOrder.quote).toMatchObject({
+      version: 2,
+      items: [{ concept: "Alineación", priceCents: 35050 }],
+      totalCents: 35050,
+    });
+  });
+
+  test("una cotización vencida deja de ser la vigente", async () => {
+    const clock = mutableClock("2026-11-02T18:00:00.000Z");
+    const workshop = createWorkshop({
+      store: new MemoryStore(),
+      clock,
+      ids: { token: () => "token-publico" },
+    });
+    const created = await workshop.createOrder(input);
+    await workshop.createQuote(created.folio, items);
+
+    clock.advance(8 * 24 * 60 * 60 * 1000);
+
+    expect(await workshop.findActiveQuote(created.folio)).toBeNull();
+    expect((await workshop.publicOrderByToken(created.token)).quote).toBeNull();
+
+    await workshop.createQuote(created.folio, [
+      { concept: "Alineación", priceCents: 35050 },
+    ]);
+
+    expect((await workshop.findActiveQuote(created.folio))?.version).toBe(2);
+    expect((await workshop.publicOrderByToken(created.token)).quote).toMatchObject({
+      version: 2,
+      totalCents: 35050,
+    });
+  });
+
   test("no mezcla datos de otra orden", async () => {
     let nextToken = 0;
     const workshop = createWorkshop({
