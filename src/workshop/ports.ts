@@ -30,4 +30,5 @@ export interface Store {
   getByFolio(folio: string): Promise<Order | null>;
   getByToken(token: string): Promise<Order | null>;
   list(): Promise<Order[]>;
+  clear(): Promise<void>;
 }

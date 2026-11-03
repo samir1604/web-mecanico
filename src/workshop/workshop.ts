@@ -1,5 +1,6 @@
 import { randomBytes } from "node:crypto";
 
+import { seedDemo } from "./demo-seed";
 import { DomainError } from "./errors";
 import { RevisionConflict, type Clock, type Store } from "./ports";
 import {
@@ -152,7 +153,7 @@ export function createWorkshop({ store, clock, ids }: WorkshopDeps) {
     };
   }
 
-  return {
+  const workshop = {
     async createOrder(input: OrderInput): Promise<Order> {
       const now = clock.now();
       const folio = await store.nextFolio();
@@ -483,7 +484,30 @@ export function createWorkshop({ store, clock, ids }: WorkshopDeps) {
       await persist(order, expectedRev);
       return structuredClone(next);
     },
+
+    /**
+     * Siembra las órdenes de demostración si el almacén no tiene ninguna orden.
+     * Devuelve true si se sembraron datos, false si ya había órdenes.
+     */
+    async seedIfEmpty(): Promise<boolean> {
+      const existing = await store.list();
+      if (existing.length > 0) {
+        return false;
+      }
+      await seedDemo(workshop);
+      return true;
+    },
+
+    /**
+     * Borra todas las órdenes del almacén y vuelve a sembrar las de demostración.
+     */
+    async resetDemo(): Promise<void> {
+      await store.clear();
+      await seedDemo(workshop);
+    },
   };
+
+  return workshop;
 }
 
 export type Workshop = ReturnType<typeof createWorkshop>;

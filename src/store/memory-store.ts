@@ -41,6 +41,12 @@ export class MemoryStore implements Store {
     return [...this.#byFolio.values()].map((order) => structuredClone(order));
   }
 
+  async clear(): Promise<void> {
+    this.#byFolio.clear();
+    this.#tokenToFolio.clear();
+    this.#sequence = 0;
+  }
+
   #write(order: Order): void {
     this.#byFolio.set(order.folio, structuredClone(order));
     this.#tokenToFolio.set(order.token, order.folio);

@@ -5,6 +5,7 @@ import { getWorkshop } from "@/service";
 import { formatDateTime, formatPromiseDate } from "@/ui/format";
 import { ORDER_STATUSES } from "@/workshop/types";
 
+import { ResetDemoButton } from "@/app/_components/reset-demo-button";
 import { ShareOrder } from "@/app/_components/share-order";
 
 export const metadata: Metadata = {
@@ -16,11 +17,11 @@ export const dynamic = "force-dynamic";
 export default async function DashboardPage({
   searchParams,
 }: {
-  searchParams: Promise<{ creada?: string; q?: string }>;
+  searchParams: Promise<{ creada?: string; q?: string; demo?: string }>;
 }) {
   await requireSession();
 
-  const { creada, q } = await searchParams;
+  const { creada, q, demo } = await searchParams;
   const query = (q ?? "").trim();
   const workshop = getWorkshop();
   const [visible, createdOrder] = await Promise.all([
@@ -41,12 +42,21 @@ export default async function DashboardPage({
           <p className="eyebrow">Taller Don Ramiro</p>
           <h1>Tablero</h1>
         </div>
-        <form action="/api/logout" method="post">
-          <button className="button button--ghost" type="submit">
-            Salir
-          </button>
-        </form>
+        <div className="topbar-actions">
+          <ResetDemoButton />
+          <form action="/api/logout" method="post">
+            <button className="button button--ghost" type="submit">
+              Salir
+            </button>
+          </form>
+        </div>
       </header>
+
+      {demo === "reiniciada" ? (
+        <p className="notice" role="status">
+          Datos de demostración restablecidos. Se han sembrado 5 órdenes de ejemplo.
+        </p>
+      ) : null}
 
       {createdOrder ? (
         <>

@@ -48,6 +48,15 @@ export function getWorkshop(): Workshop {
       store: buildStore(),
       clock: { now: () => new Date() },
     });
+
+    const shouldSeed =
+      process.env.NODE_ENV !== "test" &&
+      process.env.SEED_DEMO !== "false";
+
+    if (shouldSeed) {
+      // Siembra en segundo plano sin bloquear el arranque si está vacío
+      void holder.workshop.seedIfEmpty();
+    }
   }
   return holder.workshop;
 }

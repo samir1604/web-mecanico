@@ -61,6 +61,7 @@ describe("control de revisión", () => {
       save: (order, expectedRev) => base.save(order, expectedRev),
       getByToken: (token) => base.getByToken(token),
       list: () => base.list(),
+      clear: () => base.clear(),
       getByFolio: async (folio) => {
         reads += 1;
         if (reads === 1) {

@@ -98,4 +98,27 @@ export class RedisStore implements Store {
       .filter((order): order is Order => order !== null)
       .sort((a, b) => a.folio.localeCompare(b.folio));
   }
+
+  async clear(): Promise<void> {
+    const folios = await this.#redis.smembers(FOLIOS);
+    const keysToDelete: string[] = [FOLIOS, SEQUENCE];
+
+    if (folios.length > 0) {
+      const orders = await this.#redis.mget<Order[]>(
+        ...folios.map((folio) => orderKey(folio)),
+      );
+      for (const folio of folios) {
+        keysToDelete.push(orderKey(folio));
+      }
+      for (const order of orders) {
+        if (order?.token) {
+          keysToDelete.push(tokenKey(order.token));
+        }
+      }
+    }
+
+    if (keysToDelete.length > 0) {
+      await this.#redis.del(...keysToDelete);
+    }
+  }
 }

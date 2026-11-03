@@ -73,6 +73,20 @@ a {
   font-weight: var(--font-weight-bold);
 }
 
+.topbar-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.demo-reset-btn {
+  font-size: var(--font-size-sm);
+  padding: 0.45rem 0.85rem;
+  min-height: 40px;
+}
+
 /* Botones */
 .button {
   display: inline-flex;
