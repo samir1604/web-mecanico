@@ -1,17 +1,13 @@
 import { sessionFromRequest } from "@/auth/session";
 import { parseOrderInput } from "@/http/order-form";
+import { json, redirectTo, unauthorized, wantsJson } from "@/http/responses";
 import { getWorkshop } from "@/service";
-
-const noStore = { "Cache-Control": "no-store" };
-
-const unauthorized = () =>
-  Response.json({ error: "No autorizado." }, { status: 401, headers: noStore });
 
 export async function GET(request: Request) {
   if (!sessionFromRequest(request)) return unauthorized();
 
   const orders = await getWorkshop().listOrders();
-  return Response.json({ orders }, { headers: noStore });
+  return json({ orders });
 }
 
 export async function POST(request: Request) {
@@ -19,30 +15,22 @@ export async function POST(request: Request) {
 
   const form = await request.formData();
   const input = parseOrderInput(form);
-  const wantsJson =
-    request.headers.get("accept")?.includes("application/json") ?? false;
+  const respondJson = wantsJson(request);
 
   if ("error" in input) {
-    if (wantsJson) {
-      return Response.json({ error: input.error }, { status: 422, headers: noStore });
+    if (respondJson) {
+      return json({ error: input.error }, 422);
     }
-    return new Response(null, {
-      status: 303,
-      headers: {
-        ...noStore,
-        Location: `/ordenes/nueva?error=${encodeURIComponent(input.error)}`,
-      },
-    });
+    return redirectTo(
+      `/ordenes/nueva?error=${encodeURIComponent(input.error)}`,
+    );
   }
 
   const order = await getWorkshop().createOrder(input);
 
-  if (wantsJson) {
-    return Response.json({ order }, { status: 201, headers: noStore });
+  if (respondJson) {
+    return json({ order }, 201);
   }
 
-  return new Response(null, {
-    status: 303,
-    headers: { ...noStore, Location: `/?creada=${encodeURIComponent(order.folio)}` },
-  });
+  return redirectTo(`/?creada=${encodeURIComponent(order.folio)}`);
 }

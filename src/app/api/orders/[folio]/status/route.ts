@@ -1,12 +1,8 @@
 import { sessionFromRequest } from "@/auth/session";
+import { json, redirectTo, unauthorized, wantsJson } from "@/http/responses";
 import { parseStatusChange } from "@/http/status-form";
 import { getWorkshop } from "@/service";
 import { DomainError } from "@/workshop/errors";
-
-const noStore = { "Cache-Control": "no-store" };
-
-const unauthorized = () =>
-  Response.json({ error: "No autorizado." }, { status: 401, headers: noStore });
 
 function httpStatusFor(error: DomainError): number {
   switch (error.code) {
@@ -28,21 +24,12 @@ export async function POST(
   const { folio } = await params;
   const form = await request.formData();
   const input = parseStatusChange(form);
-  const wantsJson =
-    request.headers.get("accept")?.includes("application/json") ?? false;
+  const respondJson = wantsJson(request);
   const detailUrl = `/ordenes/${encodeURIComponent(folio)}`;
 
   const fail = (message: string, status: number) => {
-    if (wantsJson) {
-      return Response.json({ error: message }, { status, headers: noStore });
-    }
-    return new Response(null, {
-      status: 303,
-      headers: {
-        ...noStore,
-        Location: `${detailUrl}?error=${encodeURIComponent(message)}`,
-      },
-    });
+    if (respondJson) return json({ error: message }, status);
+    return redirectTo(`${detailUrl}?error=${encodeURIComponent(message)}`);
   };
 
   if ("error" in input) {
@@ -57,14 +44,9 @@ export async function POST(
       { correction: input.correction },
     );
 
-    if (wantsJson) {
-      return Response.json({ order }, { headers: noStore });
-    }
+    if (respondJson) return json({ order });
 
-    return new Response(null, {
-      status: 303,
-      headers: { ...noStore, Location: `${detailUrl}?cambio=1` },
-    });
+    return redirectTo(`${detailUrl}?cambio=1`);
   } catch (error) {
     if (error instanceof DomainError) {
       return fail(error.message, httpStatusFor(error));

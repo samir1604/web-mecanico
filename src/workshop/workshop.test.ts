@@ -213,5 +213,42 @@ describe("cambios de estado", () => {
     await expect(
       workshop.changeStatus(created.folio, "Recibido"),
     ).rejects.toMatchObject({ code: "INVALID_TRANSITION" });
+
+    const reopened = await workshop.changeStatus(
+      created.folio,
+      "Recibido",
+      "Corrección: la orden no debía cancelarse",
+      { correction: true },
+    );
+    expect(reopened.status).toBe("Recibido");
+    expect(reopened.history.at(-1)).toMatchObject({
+      from: "Cancelado",
+      to: "Recibido",
+      note: "Corrección: la orden no debía cancelarse",
+    });
+  });
+});
+
+describe("búsqueda del tablero", () => {
+  test("filtra por placa o nombre sin distinguir acentos ni guiones", async () => {
+    const workshop = newWorkshop();
+    await workshop.createOrder(input);
+    await workshop.createOrder({
+      ...input,
+      customer: { name: "María López", phone: "55 8765 4321" },
+      vehicle: { plate: "xyz-987", make: "Toyota", model: "Yaris" },
+    });
+
+    expect(await workshop.searchOrders("  ")).toHaveLength(2);
+    expect((await workshop.searchOrders("perez")).map((o) => o.folio)).toEqual([
+      "RM-0001",
+    ]);
+    expect((await workshop.searchOrders("MARIA")).map((o) => o.folio)).toEqual([
+      "RM-0002",
+    ]);
+    expect((await workshop.searchOrders("abc123")).map((o) => o.folio)).toEqual([
+      "RM-0001",
+    ]);
+    expect(await workshop.searchOrders("Nissan Versa 2018")).toEqual([]);
   });
 });

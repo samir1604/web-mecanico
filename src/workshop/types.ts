@@ -31,6 +31,9 @@ export const TERMINAL_ORDER_STATUSES: readonly OrderStatus[] = [
 export const isTerminalStatus = (status: OrderStatus): boolean =>
   TERMINAL_ORDER_STATUSES.includes(status);
 
+/** Límite de la nota opcional en un cambio de estado. */
+export const STATUS_NOTE_MAX_LENGTH = 500;
+
 export type QuoteStatus =
   | "pendiente"
   | "aprobada"

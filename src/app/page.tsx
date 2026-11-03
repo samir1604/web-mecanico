@@ -3,7 +3,6 @@ import type { Metadata } from "next";
 import { requireSession } from "@/auth/guard";
 import { getWorkshop } from "@/service";
 import { formatDateTime, formatPromiseDate } from "@/ui/format";
-import { searchOrders } from "@/ui/search";
 import { ORDER_STATUSES } from "@/workshop/types";
 
 export const metadata: Metadata = {
@@ -19,13 +18,10 @@ export default async function DashboardPage({
 }) {
   await requireSession();
 
-  const [{ creada, q }, orders] = await Promise.all([
-    searchParams,
-    getWorkshop().listOrders(),
-  ]);
-
+  const { creada, q } = await searchParams;
   const query = (q ?? "").trim();
-  const visible = searchOrders(orders, query);
+  const visible = await getWorkshop().searchOrders(query);
+  const hasOrders = query.length > 0 || visible.length > 0;
 
   const groups = ORDER_STATUSES.map((status) => ({
     status,
@@ -52,7 +48,7 @@ export default async function DashboardPage({
         </p>
       ) : null}
 
-      {orders.length === 0 ? (
+      {!hasOrders ? (
         <section className="empty">
           <h2>Aún no hay órdenes</h2>
           <p className="muted">
@@ -71,7 +67,6 @@ export default async function DashboardPage({
             </a>
             <span className="muted count">
               {visible.length} {visible.length === 1 ? "orden" : "órdenes"}
-              {query ? ` de ${orders.length}` : ""}
             </span>
           </div>
 

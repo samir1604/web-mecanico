@@ -47,6 +47,16 @@ const totalOf = (items: LineItem[]): number =>
 const isExpired = (quote: Quote, now: Date): boolean =>
   now.getTime() >= new Date(quote.expiresAt).getTime();
 
+const normalizeSearch = (value: string): string =>
+  value
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .trim();
+
+const plateSearchKey = (value: string): string =>
+  normalizeSearch(value).replace(/[^a-z0-9]/g, "");
+
 export function createWorkshop({ store, clock, ids }: WorkshopDeps) {
   const newToken = ids?.token ?? (() => randomBytes(32).toString("base64url"));
 
@@ -123,6 +133,25 @@ export function createWorkshop({ store, clock, ids }: WorkshopDeps) {
 
     async listOrders(): Promise<Order[]> {
       return store.list();
+    },
+
+    /**
+     * Consulta del tablero: por nombre del cliente o placa. Ignora acentos,
+     * mayúsculas y separadores de placa (`ABC-123` coincide con `abc123`).
+     */
+    async searchOrders(query: string): Promise<Order[]> {
+      const orders = await store.list();
+      const term = normalizeSearch(query);
+      if (!term) return orders;
+
+      const plateTerm = plateSearchKey(query);
+
+      return orders.filter(
+        (order) =>
+          normalizeSearch(order.customer.name).includes(term) ||
+          (plateTerm.length > 0 &&
+            plateSearchKey(order.vehicle.plate).includes(plateTerm)),
+      );
     },
 
     async changeStatus(

@@ -10,6 +10,8 @@ import {
   type HistoryEntry,
 } from "@/workshop/types";
 
+import { StatusForm } from "./status-form";
+
 export const metadata: Metadata = {
   title: "Detalle de la orden · Taller Don Ramiro",
 };
@@ -183,50 +185,11 @@ export default async function OrderDetailPage({
           </p>
         ) : null}
 
-        <form
-          action={`/api/orders/${order.folio}/status`}
-          method="post"
-          className="stack"
-        >
-          <label className="field">
-            <span>Nuevo estado</span>
-            <select name="status" required defaultValue="">
-              <option value="" disabled>
-                Elige un estado
-              </option>
-              {nextStatuses.map((status) => (
-                <option key={status} value={status}>
-                  {status}
-                </option>
-              ))}
-            </select>
-          </label>
-
-          <label className="field">
-            <span>
-              Nota <span className="optional">(opcional)</span>
-            </span>
-            <textarea
-              name="note"
-              rows={3}
-              maxLength={500}
-              placeholder="Esperando repuesto, el cliente pidió llamada, etc."
-            />
-          </label>
-
-          {terminal ? (
-            <label className="check">
-              <input type="checkbox" name="correction" value="1" />
-              <span>
-                Confirmo que es una corrección manual de una orden cerrada.
-              </span>
-            </label>
-          ) : null}
-
-          <button className="button" type="submit">
-            Guardar estado
-          </button>
-        </form>
+        <StatusForm
+          folio={order.folio}
+          statuses={nextStatuses}
+          terminal={terminal}
+        />
 
         <p className="field-hint">
           Cancelar mueve la orden a «Cancelado» sin borrar su historial.

@@ -1,12 +1,14 @@
-import { isOrderStatus, type OrderStatus } from "@/workshop/types";
+import {
+  isOrderStatus,
+  STATUS_NOTE_MAX_LENGTH,
+  type OrderStatus,
+} from "@/workshop/types";
 
 export interface StatusChangeInput {
   status: OrderStatus;
   note?: string;
   correction: boolean;
 }
-
-const NOTE_MAX_LENGTH = 500;
 
 /**
  * Valida la forma del cambio de estado en el borde HTTP. El dominio vuelve a
@@ -21,7 +23,7 @@ export function parseStatusChange(
     return { error: "Elige un estado válido." };
   }
 
-  const note = String(form.get("note") ?? "").trim().slice(0, NOTE_MAX_LENGTH);
+  const note = String(form.get("note") ?? "").trim().slice(0, STATUS_NOTE_MAX_LENGTH);
   const correction = ["1", "on", "true", "yes"].includes(
     String(form.get("correction") ?? "").trim().toLowerCase(),
   );
