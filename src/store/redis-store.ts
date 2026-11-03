@@ -21,11 +21,12 @@ redis.call('SET', KEYS[1], ARGV[1])
 return 1
 `;
 
-/** Acepta valores pegados con comillas desde un panel o un `.env`. */
+/** Acepta valores pegados con comillas, escapes o espacios desde un panel. */
 function unquote(value: string | undefined): string {
-  const trimmed = (value ?? "").trim();
-  const match = trimmed.match(/^(["'])([\s\S]*)\1$/);
-  return match ? match[2].trim() : trimmed;
+  let cleaned = (value ?? "").trim();
+  cleaned = cleaned.replace(/^[\\"'“”‘’\s]+/, "").replace(/[\\"'“”‘’\s]+$/, "");
+  const url = cleaned.match(/https:\/\/[^\s"'\\]+/);
+  return url ? url[0] : cleaned;
 }
 
 /**

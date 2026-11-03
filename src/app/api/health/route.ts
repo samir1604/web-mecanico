@@ -13,14 +13,14 @@ export async function GET() {
   };
 
   let redis = "not-configured";
-  const client = redisFromEnv();
-  if (client) {
-    try {
+  try {
+    const client = redisFromEnv();
+    if (client) {
       await client.ping();
       redis = "ok";
-    } catch (error) {
-      redis = `error:${error instanceof Error ? error.name : "unknown"}`;
     }
+  } catch (error) {
+    redis = `error:${error instanceof Error ? error.name : "unknown"}`;
   }
 
   return Response.json(
