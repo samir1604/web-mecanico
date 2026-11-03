@@ -43,6 +43,7 @@ export default async function LoginPage({
               required
               autoComplete="current-password"
               autoFocus
+			  placeholder="Admin123*"
             />
           </label>
           <button className="button" type="submit">
