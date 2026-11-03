@@ -4,7 +4,7 @@
 
 `web-mecanico` is a **Next.js 16 app** (App Router, TypeScript, Turbopack) for a mechanic shop, at MVP scaffold stage.
 
-- `src/app/` — UI and routes (App Router), `lang="es-MX"`: `/login`, `/` (tablero con búsqueda), `/ordenes/nueva`, `/ordenes/[folio]` (detalle), y route handlers en `src/app/api/`
+- `src/app/` — UI and routes (App Router), `lang="es-MX"`: `/login`, `/` (tablero con búsqueda), `/ordenes/nueva`, `/ordenes/[folio]` (detalle), `/orden/[token]` (página pública del cliente), y route handlers en `src/app/api/`
 - `src/auth/` — cookie de sesión firmada con HMAC, comparación de contraseña sin filtrar tiempos, guard de páginas
 - `src/http/` — validación de payloads y tests de contrato de los route handlers
 - `src/workshop/` — the pure domain module: types, ports (`Store`, `Clock`), errors, operations. Framework-free, tested with Vitest.

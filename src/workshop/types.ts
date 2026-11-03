@@ -83,6 +83,26 @@ export interface OrderInput {
   promisedAt?: string;
 }
 
+export interface PublicHistoryEntry {
+  at: string;
+  from: OrderStatus | null;
+  to: OrderStatus;
+}
+
+/**
+ * Proyección segura de una orden para el enlace del cliente. Excluye notas
+ * internas, teléfono, token, cotizaciones y cualquier dato de otras órdenes.
+ */
+export interface PublicOrder {
+  folio: string;
+  status: OrderStatus;
+  vehicle: Order["vehicle"];
+  reportedIssue: string;
+  promisedAt: string | null;
+  createdAt: string;
+  history: PublicHistoryEntry[];
+}
+
 export interface Order {
   folio: string;
   token: string;

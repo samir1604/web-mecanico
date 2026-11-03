@@ -359,6 +359,55 @@ select:focus {
   border-color: var(--color-focus);
 }
 
+/* Página pública del cliente */
+.public-shell {
+  width: min(100% - 2rem, 40rem);
+  margin: 0 auto;
+  padding: 2rem 0 3rem;
+}
+
+.public-head {
+  margin-bottom: 1rem;
+}
+
+.status-hero {
+  margin-bottom: 1.5rem;
+  padding: 1.35rem 1.2rem 1.5rem;
+  background: var(--color-primary);
+  color: var(--color-primary-contrast);
+  border-radius: 2px;
+}
+
+.status-hero__label {
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-bold);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  opacity: 0.85;
+}
+
+.status-hero h1 {
+  margin: 0.35rem 0 0.65rem;
+  font-size: clamp(2.1rem, 11vw, 3.25rem);
+  font-weight: var(--font-weight-bold);
+}
+
+.status-hero__meta {
+  font-size: var(--font-size-sm);
+  opacity: 0.9;
+}
+
+.public-foot {
+  margin-top: 0.5rem;
+  font-size: var(--font-size-sm);
+  color: var(--color-text-muted);
+  text-align: center;
+}
+
+.detail-actions {
+  margin: 0 0 1.5rem;
+}
+
 /* Detalle de orden */
 .detail-card {
   margin-bottom: 1.5rem;

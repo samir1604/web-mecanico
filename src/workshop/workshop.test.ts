@@ -229,6 +229,93 @@ describe("cambios de estado", () => {
   });
 });
 
+describe("enlace público", () => {
+  const publicWorkshop = () => {
+    const clock = mutableClock("2026-11-02T18:00:00.000Z");
+    const workshop = createWorkshop({
+      store: new MemoryStore(),
+      clock,
+      ids: { token: () => "token-publico" },
+    });
+    return { workshop, clock };
+  };
+
+  test("expone solo los datos que el cliente puede ver", async () => {
+    const { workshop } = publicWorkshop();
+    const created = await workshop.createOrder({
+      ...input,
+      internalNotes: "No mostrar: el cliente regateó",
+    });
+
+    const publicOrder = await workshop.publicOrderByToken(created.token);
+
+    expect(publicOrder).toMatchObject({
+      folio: created.folio,
+      status: "Recibido",
+      vehicle: input.vehicle,
+      reportedIssue: input.reportedIssue,
+      createdAt: "2026-11-02T18:00:00.000Z",
+    });
+    expect(publicOrder.history).toEqual([
+      {
+        at: "2026-11-02T18:00:00.000Z",
+        from: null,
+        to: "Recibido",
+      },
+    ]);
+
+    const serialized = JSON.stringify(publicOrder);
+    expect(serialized).not.toContain("No mostrar");
+    expect(publicOrder).not.toHaveProperty("internalNotes");
+    expect(publicOrder).not.toHaveProperty("token");
+    expect(publicOrder).not.toHaveProperty("customer");
+    expect(publicOrder).not.toHaveProperty("rev");
+  });
+
+  test("una corrección que reabre la orden reactiva el enlace", async () => {
+    const { workshop, clock } = publicWorkshop();
+    const created = await workshop.createOrder(input);
+    await workshop.changeStatus(created.folio, "Entregado");
+    await workshop.changeStatus(created.folio, "En reparación", "Regresó", {
+      correction: true,
+    });
+
+    clock.advance(31 * 24 * 60 * 60 * 1000);
+
+    await expect(
+      workshop.publicOrderByToken(created.token),
+    ).resolves.toMatchObject({ status: "En reparación" });
+  });
+
+  test("un token desconocido no revela si la orden existe", async () => {
+    const { workshop } = publicWorkshop();
+    await workshop.createOrder(input);
+
+    await expect(
+      workshop.publicOrderByToken("token-que-no-existe"),
+    ).rejects.toMatchObject({
+      code: "NOT_FOUND",
+      message: "Enlace no válido.",
+    });
+  });
+
+  test("vence 30 días después de entregada, no antes", async () => {
+    const { workshop, clock } = publicWorkshop();
+    const created = await workshop.createOrder(input);
+    await workshop.changeStatus(created.folio, "Entregado");
+
+    clock.advance(30 * 24 * 60 * 60 * 1000 - 1);
+    await expect(
+      workshop.publicOrderByToken(created.token),
+    ).resolves.toMatchObject({ status: "Entregado" });
+
+    clock.advance(1);
+    await expect(
+      workshop.publicOrderByToken(created.token),
+    ).rejects.toMatchObject({ code: "LINK_EXPIRED" });
+  });
+});
+
 describe("búsqueda del tablero", () => {
   test("filtra por placa o nombre sin distinguir acentos ni guiones", async () => {
     const workshop = newWorkshop();

@@ -9,10 +9,12 @@ import {
   type Order,
   type OrderInput,
   type OrderStatus,
+  type PublicOrder,
   type Quote,
 } from "./types";
 
 const QUOTE_LIFETIME_MS = 7 * 24 * 60 * 60 * 1000;
+const PUBLIC_LINK_LIFETIME_MS = 30 * 24 * 60 * 60 * 1000;
 
 export interface WorkshopDeps {
   store: Store;
@@ -125,6 +127,45 @@ export function createWorkshop({ store, clock, ids }: WorkshopDeps) {
 
     async findByToken(token: string): Promise<Order | null> {
       return store.getByToken(token);
+    },
+
+    /**
+     * Vista pública del enlace del cliente. Un token desconocido y uno vencido
+     * fallan con mensajes distintos, pero ninguno revela datos de la orden.
+     */
+    async publicOrderByToken(token: string): Promise<PublicOrder> {
+      const order = await store.getByToken(token);
+      if (!order) {
+        throw new DomainError("NOT_FOUND", "Enlace no válido.");
+      }
+
+      const deliveredAt =
+        order.deliveredAt ??
+        (order.status === "Entregado"
+          ? (order.history.find((entry) => entry.to === "Entregado")?.at ??
+            null)
+          : null);
+
+      if (
+        deliveredAt &&
+        clock.now().getTime() >=
+          new Date(deliveredAt).getTime() + PUBLIC_LINK_LIFETIME_MS
+      ) {
+        throw new DomainError(
+          "LINK_EXPIRED",
+          "El enlace venció. Pide al taller un enlace nuevo.",
+        );
+      }
+
+      return {
+        folio: order.folio,
+        status: order.status,
+        vehicle: order.vehicle,
+        reportedIssue: order.reportedIssue,
+        promisedAt: order.promisedAt,
+        createdAt: order.createdAt,
+        history: order.history.map(({ at, from, to }) => ({ at, from, to })),
+      };
     },
 
     async findByFolio(folio: string): Promise<Order | null> {

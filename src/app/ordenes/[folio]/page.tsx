@@ -140,6 +140,12 @@ export default async function OrderDetailPage({
         </dl>
       </section>
 
+      <p className="detail-actions">
+        <a className="button button--ghost" href={`/orden/${order.token}`}>
+          Ver como cliente
+        </a>
+      </p>
+
       {order.quotes.length > 0 ? (
         <section className="detail-card" aria-labelledby="cotizaciones">
           <h2 id="cotizaciones" className="section-title">
