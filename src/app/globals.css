@@ -1,0 +1,134 @@
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  margin: 0;
+  min-height: 100dvh;
+  background: var(--color-surface);
+  color: var(--color-text);
+  font-family: var(--font-family-base);
+  font-size: var(--font-size-base);
+  line-height: var(--font-line-height-relaxed);
+}
+
+h1,
+h2,
+h3 {
+  font-family: var(--font-family-heading);
+  line-height: var(--font-line-height-tight);
+  margin: 0;
+}
+
+p {
+  margin: 0;
+}
+
+a {
+  color: var(--color-primary);
+  text-underline-offset: 3px;
+}
+
+:focus-visible {
+  outline: 3px solid var(--color-focus);
+  outline-offset: 2px;
+}
+
+.shell {
+  width: min(100% - 2rem, 44rem);
+  margin: 0 auto;
+  padding: 3rem 0 4rem;
+}
+
+.eyebrow {
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-bold);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--color-primary);
+  margin-bottom: 0.75rem;
+}
+
+.hero h1 {
+  font-size: clamp(2rem, 7vw, 3rem);
+  font-weight: var(--font-weight-bold);
+}
+
+.hero p {
+  margin-top: 0.85rem;
+  max-width: 34rem;
+  color: var(--color-text-muted);
+  font-size: var(--font-size-lg);
+}
+
+.badge {
+  display: inline-block;
+  margin-top: 1.5rem;
+  padding: 0.25rem 0.6rem;
+  border: 1px solid var(--color-warning);
+  border-radius: 2px;
+  color: var(--color-warning);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-bold);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.panel {
+  margin-top: 2.5rem;
+  background: var(--color-background);
+  border: 1px solid var(--color-surface-muted);
+  border-top: 3px solid var(--color-primary);
+  padding: 1.25rem 1.35rem 1.5rem;
+}
+
+.panel h2 {
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-bold);
+}
+
+.modules {
+  list-style: none;
+  margin: 0.75rem 0 0;
+  padding: 0;
+}
+
+.modules li {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.55rem 0;
+  border-bottom: 1px solid var(--color-surface-muted);
+}
+
+.modules li:last-child {
+  border-bottom: 0;
+}
+
+.modules .name {
+  font-weight: var(--font-weight-medium);
+}
+
+.modules .state {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-muted);
+  text-align: right;
+}
+
+.modules .state.ready {
+  color: var(--color-success);
+  font-weight: var(--font-weight-bold);
+}
+
+.foot {
+  margin-top: 2rem;
+  font-size: var(--font-size-sm);
+  color: var(--color-text-muted);
+}

@@ -2,23 +2,29 @@
 
 ## What this repo is
 
-`web-mecanico` has **no application code yet**. The root contains agent infrastructure and a learning workspace:
+`web-mecanico` is a **Next.js 16 app** (App Router, TypeScript, Turbopack) for a mechanic shop, at MVP scaffold stage.
 
-- `.agents/skills/` — 27 agent skills (**local only, git-ignored**)
-- `skills-lock.json` — pins every installed skill to `mattpocock/skills` by SHA-256 `computedHash`
+- `src/app/` — UI and routes (App Router), `lang="es-MX"`
+- `src/workshop/` — the pure domain module: types, ports (`Store`, `Clock`), errors, operations. Framework-free, tested with Vitest.
+- `src/store/` — the in-memory adapter of the `Store` port (Redis comes later)
 - `.agents/specs/` — specs and tickets (project convention, see below)
-- `docs/brand/` — brand tokens and guidelines
-- `lessons/`, `reference/`, `assets/` — the teaching workspace (**local only, git-ignored**)
-- `examples/workshop-tdd/` — dependency-free sandbox for the domain's first tests (**local only, git-ignored**)
+- `docs/brand/` — brand tokens; `src/app/layout.tsx` imports `docs/brand/tokens.css` directly
+- `skills-lock.json` — pins every installed skill to `mattpocock/skills` by SHA-256 `computedHash`
 
-`MISSION.md`, `NOTES.md` and `RESOURCES.md` are also local-only and ignored. They still exist on disk; they just do not get published.
+Local-only and git-ignored: `.agents/skills/`, `lessons/`, `reference/`, `assets/`, `examples/workshop-tdd/`, `MISSION.md`, `NOTES.md`, `RESOURCES.md`. They exist on disk but are not published.
 
-There is no root `package.json`, build, lint, or CI. The only package manifest is inside `examples/workshop-tdd/` (Node 24 + `node:test`, zero dependencies). Do not assume commands or a stack — verify before running anything. When the app is scaffolded, record its real commands here.
+`examples/workshop-tdd/` is a dependency-free Node 24 + `node:test` sandbox. The root `tsconfig.json` excludes `examples`, and `vitest.config.mts` only includes `src/**/*.test.ts`, so the two test worlds do not collide.
+
+There is no ESLint config or CI yet. Do not assume commands — verify before running anything.
 
 ## Commands
 
 ```bash
-cd examples/workshop-tdd && npm test   # domain tests of the teaching sandbox
+npm install        # once
+npm run dev        # local dev server
+npm run build      # production build, type-checks the app
+npm test           # Vitest over src/**/*.test.ts
+cd examples/workshop-tdd && npm test   # sandbox tests (node:test, local only)
 ```
 
 
@@ -38,4 +44,4 @@ Project convention (overrides the skills' `.scratch/` default): specs live in `.
 
 `setup-matt-pocock-skills` has never been executed: there is no `docs/agents/` (issue tracker, triage labels, domain layout), no `GLOSSARY.md`, and no `docs/adr/`. The engineering flows (`grill-with-docs`, `to-spec`, `to-tickets`, `triage`, `wayfinder`) expect those files. Run the setup skill before creating them ad hoc.
 
-The repo now has a local git repository (`main`), but no remote yet. The setup skill's GitHub/GitLab tracker option needs a configured remote; until then, the local-markdown tracker works and stores issues under `.scratch/<feature>/issues/`.
+The repo has a local git repository (`main`) and a public remote at `https://github.com/samir1604/web-mecanico`. The setup skill's GitHub/GitLab tracker option needs the `gh` CLI authenticated (`gh` lives at `%LOCALAPPDATA%\gh-cli\bin\gh.exe`, not always on PATH); until it is used, the local-markdown tracker works and stores issues under `.scratch/<feature>/issues/`.
