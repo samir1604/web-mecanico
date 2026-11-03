@@ -1,7 +1,11 @@
 import type { Metadata } from "next";
 
 import { getWorkshop } from "@/service";
-import { formatDateTime, formatPromiseDate } from "@/ui/format";
+import {
+  formatDateTime,
+  formatPromiseDate,
+  formatStatusTransition,
+} from "@/ui/format";
 import { isDomainError } from "@/workshop/errors";
 import type { PublicOrder } from "@/workshop/types";
 
@@ -11,9 +15,6 @@ export const metadata: Metadata = {
   title: "Tu reparación · Taller Don Ramiro",
   robots: { index: false, follow: false },
 };
-
-const transition = (from: string | null, to: string): string =>
-  from ? `${from} → ${to}` : to;
 
 function Message({ title, body }: { title: string; body: string }) {
   return (
@@ -107,7 +108,9 @@ export default async function PublicOrderPage({
           {[...order.history].reverse().map((entry, index) => (
             <li key={`${entry.at}-${index}`}>
               <div className="history-head">
-                <strong>{transition(entry.from, entry.to)}</strong>
+                <strong>
+                  {formatStatusTransition(entry.from, entry.to)}
+                </strong>
                 <time dateTime={entry.at}>{formatDateTime(entry.at)}</time>
               </div>
             </li>

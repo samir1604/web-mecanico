@@ -3,7 +3,12 @@ import { notFound } from "next/navigation";
 
 import { requireSession } from "@/auth/guard";
 import { getWorkshop } from "@/service";
-import { formatDateTime, formatMoney, formatPromiseDate } from "@/ui/format";
+import {
+  formatDateTime,
+  formatMoney,
+  formatPromiseDate,
+  formatStatusTransition,
+} from "@/ui/format";
 import {
   isTerminalStatus,
   ORDER_STATUSES,
@@ -23,9 +28,6 @@ const AUTHOR_LABEL: Record<HistoryEntry["author"], string> = {
   cliente: "Cliente",
   sistema: "Sistema",
 };
-
-const transition = (entry: HistoryEntry): string =>
-  entry.from ? `${entry.from} → ${entry.to}` : entry.to;
 
 export default async function OrderDetailPage({
   params,
@@ -211,7 +213,9 @@ export default async function OrderDetailPage({
           {[...order.history].reverse().map((entry, index) => (
             <li key={`${entry.at}-${index}`}>
               <div className="history-head">
-                <strong>{transition(entry)}</strong>
+                <strong>
+                  {formatStatusTransition(entry.from, entry.to)}
+                </strong>
                 <time dateTime={entry.at}>{formatDateTime(entry.at)}</time>
               </div>
               <p className="muted">{AUTHOR_LABEL[entry.author]}</p>

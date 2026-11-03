@@ -404,11 +404,11 @@ select:focus {
   text-align: center;
 }
 
+/* Detalle de orden */
 .detail-actions {
   margin: 0 0 1.5rem;
 }
 
-/* Detalle de orden */
 .detail-card {
   margin-bottom: 1.5rem;
   background: var(--color-background);

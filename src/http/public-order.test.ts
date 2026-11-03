@@ -73,20 +73,31 @@ describe("contrato del enlace público", () => {
     const cookie = await sessionCookie();
     const { token, folio } = await create(cookie);
 
+    const changed = await changeStatus(
+      request(
+        `http://localhost/api/orders/${folio}/status`,
+        { status: "En diagnóstico", note: "No mostrar: nota interna" },
+        { accept: "application/json", cookie },
+      ),
+      { params: Promise.resolve({ folio }) },
+    );
+    expect(changed.status).toBe(200);
+
     const response = await lookup(token);
     const body = await response.json();
 
     expect(response.status).toBe(200);
     expect(body.order).toMatchObject({
       folio,
-      status: "Recibido",
+      status: "En diagnóstico",
       reportedIssue: "Ruido en la suspensión delantera",
       vehicle: { plate: "ABC-123", make: "Nissan", model: "Versa 2018" },
     });
-    expect(body.order.history).toHaveLength(1);
+    expect(body.order.history).toHaveLength(2);
 
     const serialized = JSON.stringify(body);
     expect(serialized).not.toContain("regateó");
+    expect(serialized).not.toContain("nota interna");
     expect(body.order).not.toHaveProperty("internalNotes");
     expect(body.order).not.toHaveProperty("token");
     expect(body.order).not.toHaveProperty("customer");

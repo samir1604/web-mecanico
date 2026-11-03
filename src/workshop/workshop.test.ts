@@ -287,6 +287,48 @@ describe("enlace público", () => {
     ).resolves.toMatchObject({ status: "En reparación" });
   });
 
+  test("cancelar una orden entregada no deja el enlace vivo para siempre", async () => {
+    const { workshop, clock } = publicWorkshop();
+    const created = await workshop.createOrder(input);
+    await workshop.changeStatus(created.folio, "Entregado");
+    await workshop.changeStatus(created.folio, "Cancelado", "Se canceló", {
+      correction: true,
+    });
+
+    clock.advance(30 * 24 * 60 * 60 * 1000);
+
+    await expect(
+      workshop.publicOrderByToken(created.token),
+    ).rejects.toMatchObject({ code: "LINK_EXPIRED" });
+  });
+
+  test("no mezcla datos de otra orden", async () => {
+    let nextToken = 0;
+    const workshop = createWorkshop({
+      store: new MemoryStore(),
+      clock: mutableClock("2026-11-02T18:00:00.000Z"),
+      ids: { token: () => `token-${++nextToken}` },
+    });
+    const first = await workshop.createOrder({
+      ...input,
+      internalNotes: "No mostrar: el cliente regateó",
+    });
+    await workshop.createOrder({
+      ...input,
+      customer: { name: "Otra Persona", phone: "5599999999" },
+      vehicle: { plate: "OTRA-999", make: "Toyota", model: "Corolla" },
+      reportedIssue: "Falla de la otra orden",
+    });
+
+    const publicOrder = await workshop.publicOrderByToken(first.token);
+    const serialized = JSON.stringify(publicOrder);
+
+    expect(publicOrder.folio).toBe(first.folio);
+    expect(serialized).not.toContain("Otra Persona");
+    expect(serialized).not.toContain("OTRA-999");
+    expect(serialized).not.toContain("Falla de la otra orden");
+  });
+
   test("un token desconocido no revela si la orden existe", async () => {
     const { workshop } = publicWorkshop();
     await workshop.createOrder(input);

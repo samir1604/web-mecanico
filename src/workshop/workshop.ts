@@ -139,11 +139,15 @@ export function createWorkshop({ store, clock, ids }: WorkshopDeps) {
         throw new DomainError("NOT_FOUND", "Enlace no válido.");
       }
 
+      // `deliveredAt` se limpia al corregir la orden, así que una orden
+      // terminal recupera la última entrega del historial para no dejar el
+      // enlace vivo indefinidamente.
       const deliveredAt =
         order.deliveredAt ??
-        (order.status === "Entregado"
-          ? (order.history.find((entry) => entry.to === "Entregado")?.at ??
-            null)
+        (isTerminalStatus(order.status)
+          ? ([...order.history]
+              .reverse()
+              .find((entry) => entry.to === "Entregado")?.at ?? null)
           : null);
 
       if (

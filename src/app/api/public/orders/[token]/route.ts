@@ -1,8 +1,7 @@
+import { isPublicToken } from "@/http/public-token";
 import { json } from "@/http/responses";
 import { getWorkshop } from "@/service";
 import { isDomainError } from "@/workshop/errors";
-
-const TOKEN_SHAPE = /^[A-Za-z0-9_-]{10,128}$/;
 
 /** Enlace público del cliente: el token es la única credencial. */
 export async function GET(
@@ -11,7 +10,7 @@ export async function GET(
 ) {
   const { token } = await params;
 
-  if (!TOKEN_SHAPE.test(token)) {
+  if (!isPublicToken(token)) {
     return json({ error: "Enlace no válido." }, 404);
   }
 

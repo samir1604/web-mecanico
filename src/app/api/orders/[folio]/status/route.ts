@@ -2,7 +2,7 @@ import { sessionFromRequest } from "@/auth/session";
 import { json, redirectTo, unauthorized, wantsJson } from "@/http/responses";
 import { parseStatusChange } from "@/http/status-form";
 import { getWorkshop } from "@/service";
-import { DomainError } from "@/workshop/errors";
+import { isDomainError, type DomainError } from "@/workshop/errors";
 
 function httpStatusFor(error: DomainError): number {
   switch (error.code) {
@@ -48,7 +48,7 @@ export async function POST(
 
     return redirectTo(`${detailUrl}?cambio=1`);
   } catch (error) {
-    if (error instanceof DomainError) {
+    if (isDomainError(error)) {
       return fail(error.message, httpStatusFor(error));
     }
     throw error;

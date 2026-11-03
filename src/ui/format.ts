@@ -1,3 +1,5 @@
+import type { OrderStatus } from "@/workshop/types";
+
 const dateTime = new Intl.DateTimeFormat("es-MX", {
   timeZone: "America/Mexico_City",
   dateStyle: "medium",
@@ -22,3 +24,8 @@ export const formatPromiseDate = (value: string): string =>
   dateOnly.format(new Date(`${value}T00:00:00.000Z`));
 
 export const formatMoney = (cents: number): string => money.format(cents / 100);
+
+export const formatStatusTransition = (
+  from: OrderStatus | null,
+  to: OrderStatus,
+): string => (from ? `${from} → ${to}` : to);

@@ -17,6 +17,6 @@
 - La página pública vive en `/orden/[token]`, no pide sesión y declara `noindex, nofollow`.
 - `publicOrderByToken(token)` devuelve una proyección explícita: folio, estado, vehículo, falla, promesa, ingreso e historial sin autor ni notas. Nunca incluye notas internas, teléfono, token, revisión, cotizaciones ni aprobaciones.
 - Token desconocido y token con formato inválido comparten el mensaje "Enlace no válido." (HTTP 404). Un enlace vencido responde 410 con "El enlace venció.".
-- La caducidad se evalúa con el reloj del dominio: 30 días desde `deliveredAt`. Si una corrección saca la orden de `Entregado`, el enlace vuelve a funcionar.
+- La caducidad se evalúa con el reloj del dominio: 30 días desde `deliveredAt`. Si una corrección reabre la orden a un estado no terminal, el enlace vuelve a funcionar; si la deja en `Cancelado`, sigue venciendo a los 30 días de la última entrega para no exponer datos viejos.
 - `GET /api/public/orders/[token]` es el contrato público. La página usa el mismo método de dominio y muestra el aviso correspondiente sin filtrar si el token existió.
 - El detalle del panel agrega «Ver como cliente» para abrir la página pública de esa orden.
