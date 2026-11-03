@@ -1,20 +1,53 @@
 import { MemoryStore } from "@/store/memory-store";
+import { RedisStore } from "@/store/redis-store";
+import type { Store } from "@/workshop/ports";
 import { createWorkshop, type Workshop } from "@/workshop/workshop";
 
 /**
- * Composición para desarrollo y demo.
+ * Composición de la app.
  *
- * En Vercel cada instancia tiene su propia memoria: este singleton sirve para
- * el esqueleto local. El ticket 02 lo reemplaza por el adaptador de Upstash.
+ * - Con Upstash configurado, las órdenes viven en Redis y sobreviven a los
+ *   reinicios y despliegues.
+ * - Sin credenciales en desarrollo, cae al store en memoria para no bloquear
+ *   el recorrido local.
+ * - En producción y en tests el comportamiento es explícito: Redis o error.
  */
-type ServiceHolder = { workshop?: Workshop };
+type ServiceHolder = { workshop?: Workshop; warned?: boolean };
 
 const holder = globalThis as unknown as ServiceHolder;
+
+function buildStore(): Store {
+  if (process.env.NODE_ENV === "test") {
+    return new MemoryStore();
+  }
+
+  const url = process.env.UPSTASH_REDIS_REST_URL;
+  const token = process.env.UPSTASH_REDIS_REST_TOKEN;
+
+  if (url && token) {
+    return new RedisStore();
+  }
+
+  if (process.env.NODE_ENV === "production") {
+    throw new Error(
+      "Faltan UPSTASH_REDIS_REST_URL y UPSTASH_REDIS_REST_TOKEN: el panel no puede usar memoria en producción.",
+    );
+  }
+
+  if (!holder.warned) {
+    holder.warned = true;
+    console.warn(
+      "[web-mecanico] Sin credenciales de Upstash: usando store en memoria. Los datos se pierden al reiniciar.",
+    );
+  }
+
+  return new MemoryStore();
+}
 
 export function getWorkshop(): Workshop {
   if (!holder.workshop) {
     holder.workshop = createWorkshop({
-      store: new MemoryStore(),
+      store: buildStore(),
       clock: { now: () => new Date() },
     });
   }

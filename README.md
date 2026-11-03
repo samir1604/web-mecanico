@@ -2,7 +2,7 @@
 
 Aplicación web para que un taller mecánico comparta el estado de cada orden con su cliente mediante un enlace, sin llamadas telefónicas y con aprobación de cotizaciones verificable.
 
-> **Estado:** el esqueleto caminante ya funciona en local: login con contraseña única, alta de orden y tablero agrupado por estado. Persistencia en Redis, cotizaciones, página del cliente y evidencia de aprobación siguen pendientes.
+> **Estado:** el panel funciona en local con persistencia real en Upstash Redis (verificada tras reiniciar el proceso). Despliegue en Vercel, cotizaciones, página del cliente y evidencia de aprobación siguen pendientes.
 
 ## El problema
 

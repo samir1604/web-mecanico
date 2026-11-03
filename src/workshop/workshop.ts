@@ -1,7 +1,7 @@
 import { randomBytes } from "node:crypto";
 
 import { DomainError } from "./errors";
-import type { Clock, Store } from "./ports";
+import { RevisionConflict, type Clock, type Store } from "./ports";
 import type { LineItem, Order, OrderInput, Quote } from "./types";
 
 const QUOTE_LIFETIME_MS = 7 * 24 * 60 * 60 * 1000;
@@ -50,6 +50,20 @@ export function createWorkshop({ store, clock, ids }: WorkshopDeps) {
     return order;
   }
 
+  async function persist(order: Order, expectedRev: number): Promise<void> {
+    try {
+      await store.save(order, expectedRev);
+    } catch (error) {
+      if (error instanceof RevisionConflict) {
+        throw new DomainError(
+          "VERSION_CONFLICT",
+          "La orden cambió, recarga antes de continuar.",
+        );
+      }
+      throw error;
+    }
+  }
+
   function buildQuote(order: Order, items: LineItem[]): Quote {
     const now = clock.now();
     return {
@@ -87,7 +101,7 @@ export function createWorkshop({ store, clock, ids }: WorkshopDeps) {
         rev: 1,
       };
 
-      await store.save(order);
+      await store.create(order);
       return order;
     },
 
@@ -118,11 +132,12 @@ export function createWorkshop({ store, clock, ids }: WorkshopDeps) {
         );
       }
 
+      const expectedRev = order.rev;
       const from = order.status;
       const quote = buildQuote(order, items);
       order.quotes.push(quote);
       order.status = "Esperando aprobación";
-      order.rev += 1;
+      order.rev = expectedRev + 1;
       order.history.push({
         at: now.toISOString(),
         from,
@@ -131,7 +146,7 @@ export function createWorkshop({ store, clock, ids }: WorkshopDeps) {
         note: `Cotización v${quote.version} creada`,
       });
 
-      await store.save(order);
+      await persist(order, expectedRev);
       return structuredClone(quote);
     },
 
@@ -160,12 +175,13 @@ export function createWorkshop({ store, clock, ids }: WorkshopDeps) {
         );
       }
 
+      const expectedRev = order.rev;
       current.status = "reemplazada";
       const next = buildQuote(order, items);
       order.quotes.push(next);
-      order.rev += 1;
+      order.rev = expectedRev + 1;
 
-      await store.save(order);
+      await persist(order, expectedRev);
       return structuredClone(next);
     },
   };

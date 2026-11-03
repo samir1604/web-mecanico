@@ -1,7 +1,7 @@
 import type { Order } from "../workshop/types";
-import type { Store } from "../workshop/ports";
+import { RevisionConflict, type Store } from "../workshop/ports";
 
-/** Adaptador en memoria del puerto Store. En producción: Upstash Redis. */
+/** Adaptador en memoria del puerto Store, para tests y desarrollo sin Redis. */
 export class MemoryStore implements Store {
   #byFolio = new Map<string, Order>();
   #tokenToFolio = new Map<string, string>();
@@ -12,9 +12,19 @@ export class MemoryStore implements Store {
     return `RM-${String(this.#sequence).padStart(4, "0")}`;
   }
 
-  async save(order: Order): Promise<void> {
-    this.#byFolio.set(order.folio, structuredClone(order));
-    this.#tokenToFolio.set(order.token, order.folio);
+  async create(order: Order): Promise<void> {
+    if (this.#byFolio.has(order.folio)) {
+      throw new RevisionConflict();
+    }
+    this.#write(order);
+  }
+
+  async save(order: Order, expectedRev: number): Promise<void> {
+    const current = this.#byFolio.get(order.folio);
+    if (!current || current.rev !== expectedRev) {
+      throw new RevisionConflict();
+    }
+    this.#write(order);
   }
 
   async getByFolio(folio: string): Promise<Order | null> {
@@ -29,5 +39,10 @@ export class MemoryStore implements Store {
 
   async list(): Promise<Order[]> {
     return [...this.#byFolio.values()].map((order) => structuredClone(order));
+  }
+
+  #write(order: Order): void {
+    this.#byFolio.set(order.folio, structuredClone(order));
+    this.#tokenToFolio.set(order.token, order.folio);
   }
 }

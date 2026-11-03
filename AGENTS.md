@@ -8,8 +8,8 @@
 - `src/auth/` — cookie de sesión firmada con HMAC, comparación de contraseña sin filtrar tiempos, guard de páginas
 - `src/http/` — validación de payloads y tests de contrato de los route handlers
 - `src/workshop/` — the pure domain module: types, ports (`Store`, `Clock`), errors, operations. Framework-free, tested with Vitest.
-- `src/store/` — the in-memory adapter of the `Store` port (Redis comes later)
-- `src/service.ts` — composition root: memory store + real clock, singleton per process (ticket 02 swaps in Redis)
+- `src/store/` — dos adaptadores del puerto `Store`: `memory-store.ts` (tests y dev sin credenciales) y `redis-store.ts` (Upstash, con comparación y escritura atómica en Lua). `src/service.ts` elige Redis cuando hay credenciales y rechaza memoria en producción.
+- `src/service.ts` — composition root: elige Redis o memoria, y usa el reloj real; singleton por proceso
 - `src/ui/` — formatting helpers (fechas en `America/Mexico_City`, USD)
 - `.agents/specs/` — specs and tickets (project convention, see below)
 - `docs/brand/` — brand tokens; `src/app/layout.tsx` imports `docs/brand/tokens.css` directly
