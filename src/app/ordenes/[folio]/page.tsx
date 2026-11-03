@@ -15,6 +15,7 @@ import {
   type HistoryEntry,
 } from "@/workshop/types";
 
+import { ShareOrder } from "@/app/_components/share-order";
 import { QuoteForm } from "./quote-form";
 import { StatusForm } from "./status-form";
 
@@ -154,6 +155,72 @@ export default async function OrderDetailPage({
           </div>
         </dl>
       </section>
+
+      {order.approvals.length > 0 ? (
+        <section
+          className="detail-card approval-card"
+          aria-labelledby="aprobaciones"
+        >
+          <h2 id="aprobaciones" className="section-title">
+            Sello de aprobación
+          </h2>
+
+          <ul className="approval-list">
+            {[...order.approvals].reverse().map((approval) => (
+              <li key={approval.id} className="approval-stamp">
+                <div className="order-head">
+                  <strong className="approval-folio">{approval.id}</strong>
+                  <span className="badge">
+                    Cotización v{approval.quoteVersion}
+                  </span>
+                </div>
+
+                <dl className="detail-list approval-meta">
+                  <div>
+                    <dt>Aprobada el</dt>
+                    <dd>{formatDateTime(approval.approvedAt)}</dd>
+                  </div>
+                  <div>
+                    <dt>Teléfono de la orden</dt>
+                    <dd>{approval.phone}</dd>
+                  </div>
+                  <div>
+                    <dt>IP</dt>
+                    <dd>{approval.ip}</dd>
+                  </div>
+                  <div className="detail-item--wide">
+                    <dt>Agente de usuario</dt>
+                    <dd className="approval-agent">{approval.userAgent}</dd>
+                  </div>
+                </dl>
+
+                <p className="approval-subtitle">
+                  Copia congelada de lo aprobado
+                </p>
+                <ul className="item-list">
+                  {approval.items.map((item, index) => (
+                    <li key={`${approval.id}-${index}`}>
+                      <span>{item.concept}</span>
+                      <span>{formatMoney(item.priceCents)}</span>
+                    </li>
+                  ))}
+                </ul>
+                <p className="quote-total">
+                  Total aprobado:{" "}
+                  <strong>{formatMoney(approval.totalCents)}</strong>
+                </p>
+              </li>
+            ))}
+          </ul>
+        </section>
+      ) : null}
+
+      <ShareOrder
+        folio={order.folio}
+        token={order.token}
+        customerName={order.customer.name}
+        phone={order.customer.phone}
+      />
 
       <p className="detail-actions">
         <a className="button button--ghost" href={`/orden/${order.token}`}>

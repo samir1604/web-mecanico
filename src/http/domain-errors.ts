@@ -7,6 +7,8 @@ export function httpStatusFor(error: DomainError): number {
       return 404;
     case "VALIDATION":
       return 422;
+    case "LINK_EXPIRED":
+      return 410;
     default:
       return 409;
   }

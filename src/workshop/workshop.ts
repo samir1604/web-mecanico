@@ -5,10 +5,12 @@ import { RevisionConflict, type Clock, type Store } from "./ports";
 import {
   isOrderStatus,
   isTerminalStatus,
+  type Approval,
   type LineItem,
   type Order,
   type OrderInput,
   type OrderStatus,
+  type PublicApproval,
   type PublicOrder,
   type Quote,
 } from "./types";
@@ -66,6 +68,52 @@ const normalizeSearch = (value: string): string =>
 
 const plateSearchKey = (value: string): string =>
   normalizeSearch(value).replace(/[^a-z0-9]/g, "");
+
+/**
+ * El enlace sigue vivo hasta 30 días después de la entrega. `deliveredAt` se
+ * limpia al corregir la orden, así que una orden terminal recupera la última
+ * entrega del historial para no dejar el enlace vivo indefinidamente.
+ */
+function assertLinkAlive(order: Order, now: Date): void {
+  const deliveredAt =
+    order.deliveredAt ??
+    (isTerminalStatus(order.status)
+      ? ([...order.history]
+          .reverse()
+          .find((entry) => entry.to === "Entregado")?.at ?? null)
+      : null);
+
+  if (
+    deliveredAt &&
+    now.getTime() >=
+      new Date(deliveredAt).getTime() + PUBLIC_LINK_LIFETIME_MS
+  ) {
+    throw new DomainError(
+      "LINK_EXPIRED",
+      "El enlace venció. Pide al taller un enlace nuevo.",
+    );
+  }
+}
+
+const publicItems = (items: LineItem[]) =>
+  items.map(({ concept, priceCents }) => ({ concept, priceCents }));
+
+const publicApprovalOf = (order: Order): PublicApproval | null => {
+  const latest = order.approvals.at(-1);
+  if (!latest) return null;
+
+  return {
+    id: latest.id,
+    quoteVersion: latest.quoteVersion,
+    items: publicItems(latest.items),
+    totalCents: latest.totalCents,
+    approvedAt: latest.approvedAt,
+  };
+};
+
+/** Recorta datos de la petición para que no crezcan sin límite en el documento. */
+const cleanEvidence = (value: string, maxLength: number, fallback: string) =>
+  value.trim().slice(0, maxLength) || fallback;
 
 export function createWorkshop({ store, clock, ids }: WorkshopDeps) {
   const newToken = ids?.token ?? (() => randomBytes(32).toString("base64url"));
@@ -147,29 +195,10 @@ export function createWorkshop({ store, clock, ids }: WorkshopDeps) {
         throw new DomainError("NOT_FOUND", "Enlace no válido.");
       }
 
-      // `deliveredAt` se limpia al corregir la orden, así que una orden
-      // terminal recupera la última entrega del historial para no dejar el
-      // enlace vivo indefinidamente.
-      const deliveredAt =
-        order.deliveredAt ??
-        (isTerminalStatus(order.status)
-          ? ([...order.history]
-              .reverse()
-              .find((entry) => entry.to === "Entregado")?.at ?? null)
-          : null);
+      const now = clock.now();
+      assertLinkAlive(order, now);
 
-      if (
-        deliveredAt &&
-        clock.now().getTime() >=
-          new Date(deliveredAt).getTime() + PUBLIC_LINK_LIFETIME_MS
-      ) {
-        throw new DomainError(
-          "LINK_EXPIRED",
-          "El enlace venció. Pide al taller un enlace nuevo.",
-        );
-      }
-
-      const pending = activePendingQuote(order, clock.now());
+      const pending = activePendingQuote(order, now);
 
       return {
         folio: order.folio,
@@ -182,15 +211,13 @@ export function createWorkshop({ store, clock, ids }: WorkshopDeps) {
         quote: pending
           ? {
               version: pending.version,
-              items: pending.items.map(({ concept, priceCents }) => ({
-                concept,
-                priceCents,
-              })),
+              items: publicItems(pending.items),
               totalCents: pending.totalCents,
               createdAt: pending.createdAt,
               expiresAt: pending.expiresAt,
             }
           : null,
+        approval: publicApprovalOf(order),
       };
     },
 
@@ -313,6 +340,113 @@ export function createWorkshop({ store, clock, ids }: WorkshopDeps) {
 
       await persist(order, expectedRev);
       return structuredClone(quote);
+    },
+
+    /**
+     * El cliente aprueba la cotización vigente. La evidencia se congela tal
+     * como estaba la cotización en ese instante; ediciones posteriores solo
+     * pueden crear una versión nueva y nunca tocar este registro.
+     */
+    async approveQuote(
+      token: string,
+      version: number,
+      evidence: { ip: string; userAgent: string },
+    ): Promise<{ approval: Approval; order: Order }> {
+      if (!Number.isInteger(version) || version < 1) {
+        throw new DomainError(
+          "VALIDATION",
+          "La versión de la cotización no es válida. Recarga la página.",
+        );
+      }
+
+      const order = await store.getByToken(token);
+      if (!order) {
+        throw new DomainError("NOT_FOUND", "Enlace no válido.");
+      }
+
+      const now = clock.now();
+      assertLinkAlive(order, now);
+
+      if (isTerminalStatus(order.status)) {
+        throw new DomainError(
+          "INVALID_TRANSITION",
+          `La orden está en «${order.status}» y ya no admite aprobaciones.`,
+        );
+      }
+
+      const quote = order.quotes.find((entry) => entry.version === version);
+      if (!quote) {
+        throw new DomainError(
+          "NOT_FOUND",
+          "Esa cotización no existe. Recarga la página para ver la vigente.",
+        );
+      }
+
+      switch (quote.status) {
+        case "aprobada":
+          throw new DomainError(
+            "QUOTE_NOT_PENDING",
+            "Esta cotización ya fue aprobada.",
+          );
+        case "rechazada":
+          throw new DomainError(
+            "QUOTE_NOT_PENDING",
+            "Esta cotización fue rechazada.",
+          );
+        case "reemplazada":
+          throw new DomainError(
+            "QUOTE_NOT_PENDING",
+            "La cotización cambió. Recarga la página para ver la versión vigente.",
+          );
+        case "vencida":
+          throw new DomainError(
+            "QUOTE_EXPIRED",
+            "La cotización venció, pide una nueva al taller.",
+          );
+      }
+
+      if (isExpired(quote, now)) {
+        throw new DomainError(
+          "QUOTE_EXPIRED",
+          "La cotización venció, pide una nueva al taller.",
+        );
+      }
+
+      const expectedRev = order.rev;
+      const from = order.status;
+
+      const approval: Approval = {
+        id: `AP-${String(order.approvals.length + 1).padStart(4, "0")}`,
+        quoteVersion: quote.version,
+        items: structuredClone(quote.items),
+        totalCents: quote.totalCents,
+        phone: order.customer.phone,
+        approvedAt: now.toISOString(),
+        ip: cleanEvidence(evidence.ip, 100, "desconocida"),
+        userAgent: cleanEvidence(evidence.userAgent, 400, "desconocido"),
+      };
+
+      quote.status = "aprobada";
+      order.approvals.push(approval);
+
+      if (from !== "En reparación") {
+        order.status = "En reparación";
+        order.history.push({
+          at: now.toISOString(),
+          from,
+          to: "En reparación",
+          author: "cliente",
+          note: `Aprobación ${approval.id} · cotización v${quote.version}`,
+        });
+      }
+
+      order.rev = expectedRev + 1;
+      await persist(order, expectedRev);
+
+      return {
+        approval: structuredClone(approval),
+        order: structuredClone(order),
+      };
     },
 
     async editQuote(

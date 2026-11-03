@@ -103,6 +103,19 @@ export interface PublicQuote {
 }
 
 /**
+ * Comprobante que ve el cliente tras aprobar. Es la copia congelada de lo que
+ * aceptó; no incluye IP, agente de usuario ni teléfono, que quedan solo en el
+ * panel del dueño.
+ */
+export interface PublicApproval {
+  id: string;
+  quoteVersion: number;
+  items: PublicQuoteItem[];
+  totalCents: number;
+  approvedAt: string;
+}
+
+/**
  * Proyección segura de una orden para el enlace del cliente. Excluye notas
  * internas, teléfono, token, cotizaciones reemplazadas y cualquier dato de
  * otras órdenes; solo incluye la cotización vigente, si existe.
@@ -116,6 +129,7 @@ export interface PublicOrder {
   createdAt: string;
   history: PublicHistoryEntry[];
   quote: PublicQuote | null;
+  approval: PublicApproval | null;
 }
 
 export interface Order {

@@ -132,6 +132,188 @@ describe("cotizaciones", () => {  test("crear mueve a Esperando aprobación y ca
   });
 });
 
+describe("aprobación con evidencia", () => {
+  const evidence = {
+    ip: "189.203.10.5",
+    userAgent: "Mozilla/5.0 (iPhone; CPU iPhone OS 18_0)",
+  };
+
+  const approvalWorkshop = () => {
+    const clock = mutableClock("2026-11-02T18:00:00.000Z");
+    const workshop = createWorkshop({
+      store: new MemoryStore(),
+      clock,
+      ids: { token: () => "token-publico" },
+    });
+    return { workshop, clock };
+  };
+
+  test("congela partidas, total, teléfono y datos de la petición", async () => {
+    const { workshop } = approvalWorkshop();
+    const created = await workshop.createOrder(input);
+    await workshop.createQuote(created.folio, items);
+
+    const { approval } = await workshop.approveQuote(
+      created.token,
+      1,
+      evidence,
+    );
+
+    expect(approval).toEqual({
+      id: "AP-0001",
+      quoteVersion: 1,
+      items,
+      totalCents: 165000,
+      phone: input.customer.phone,
+      approvedAt: "2026-11-02T18:00:00.000Z",
+      ip: evidence.ip,
+      userAgent: evidence.userAgent,
+    });
+
+    const reloaded = await workshop.findByFolio(created.folio);
+    expect(reloaded?.status).toBe("En reparación");
+    expect(reloaded?.quotes[0]?.status).toBe("aprobada");
+    expect(reloaded?.approvals).toEqual([approval]);
+    expect(reloaded?.history.at(-1)).toEqual({
+      at: "2026-11-02T18:00:00.000Z",
+      from: "Esperando aprobación",
+      to: "En reparación",
+      author: "cliente",
+      note: "Aprobación AP-0001 · cotización v1",
+    });
+  });
+
+  test("una cotización posterior no altera la evidencia ya registrada", async () => {
+    const { workshop } = approvalWorkshop();
+    const created = await workshop.createOrder(input);
+    await workshop.createQuote(created.folio, items);
+    const { approval } = await workshop.approveQuote(
+      created.token,
+      1,
+      evidence,
+    );
+
+    await workshop.createQuote(created.folio, [
+      { concept: "Cambio de bomba de agua", priceCents: 98000 },
+    ]);
+    await workshop.editQuote(created.folio, 2, [
+      { concept: "Cambio de bomba de agua", priceCents: 105000 },
+    ]);
+
+    const reloaded = await workshop.findByFolio(created.folio);
+    expect(reloaded?.approvals).toEqual([approval]);
+    expect(reloaded?.approvals[0]?.items).toEqual(items);
+    expect(reloaded?.approvals[0]?.totalCents).toBe(165000);
+  });
+
+  test("la proyección pública muestra el comprobante sin datos privados", async () => {
+    const { workshop } = approvalWorkshop();
+    const created = await workshop.createOrder(input);
+    await workshop.createQuote(created.folio, items);
+    await workshop.approveQuote(created.token, 1, evidence);
+
+    const publicOrder = await workshop.publicOrderByToken(created.token);
+
+    expect(publicOrder.approval).toEqual({
+      id: "AP-0001",
+      quoteVersion: 1,
+      items,
+      totalCents: 165000,
+      approvedAt: "2026-11-02T18:00:00.000Z",
+    });
+
+    const serialized = JSON.stringify(publicOrder);
+    expect(serialized).not.toContain(evidence.ip);
+    expect(serialized).not.toContain(evidence.userAgent);
+    expect(serialized).not.toContain(input.customer.phone);
+  });
+
+  test("una versión inexistente no crea evidencia", async () => {
+    const { workshop } = approvalWorkshop();
+    const created = await workshop.createOrder(input);
+    await workshop.createQuote(created.folio, items);
+
+    await expect(
+      workshop.approveQuote(created.token, 7, evidence),
+    ).rejects.toMatchObject({ code: "NOT_FOUND" });
+
+    const reloaded = await workshop.findByFolio(created.folio);
+    expect(reloaded?.approvals).toHaveLength(0);
+    expect(reloaded?.status).toBe("Esperando aprobación");
+  });
+
+  test("no permite aprobar dos veces la misma cotización", async () => {
+    const { workshop } = approvalWorkshop();
+    const created = await workshop.createOrder(input);
+    await workshop.createQuote(created.folio, items);
+    await workshop.approveQuote(created.token, 1, evidence);
+
+    await expect(
+      workshop.approveQuote(created.token, 1, evidence),
+    ).rejects.toMatchObject({
+      code: "QUOTE_NOT_PENDING",
+      message: "Esta cotización ya fue aprobada.",
+    });
+  });
+
+  test("no permite aprobar una cotización reemplazada", async () => {
+    const { workshop } = approvalWorkshop();
+    const created = await workshop.createOrder(input);
+    await workshop.createQuote(created.folio, items);
+    await workshop.editQuote(created.folio, 1, [
+      { concept: "Alineación", priceCents: 35050 },
+    ]);
+
+    await expect(
+      workshop.approveQuote(created.token, 1, evidence),
+    ).rejects.toMatchObject({ code: "QUOTE_NOT_PENDING" });
+
+    const reloaded = await workshop.findByFolio(created.folio);
+    expect(reloaded?.approvals).toHaveLength(0);
+  });
+
+  test("no permite aprobar una cotización vencida", async () => {
+    const { workshop, clock } = approvalWorkshop();
+    const created = await workshop.createOrder(input);
+    await workshop.createQuote(created.folio, items);
+
+    clock.advance(7 * 24 * 60 * 60 * 1000);
+
+    await expect(
+      workshop.approveQuote(created.token, 1, evidence),
+    ).rejects.toMatchObject({ code: "QUOTE_EXPIRED" });
+
+    const reloaded = await workshop.findByFolio(created.folio);
+    expect(reloaded?.approvals).toHaveLength(0);
+  });
+
+  test("no permite aprobar en una orden terminal", async () => {
+    const { workshop } = approvalWorkshop();
+    const created = await workshop.createOrder(input);
+    await workshop.createQuote(created.folio, items);
+    await workshop.changeStatus(created.folio, "Entregado");
+
+    await expect(
+      workshop.approveQuote(created.token, 1, evidence),
+    ).rejects.toMatchObject({ code: "INVALID_TRANSITION" });
+  });
+
+  test("cada aprobación recibe su propio folio", async () => {
+    const { workshop } = approvalWorkshop();
+    const created = await workshop.createOrder(input);
+    await workshop.createQuote(created.folio, items);
+    await workshop.approveQuote(created.token, 1, evidence);
+
+    await workshop.createQuote(created.folio, [
+      { concept: "Cambio de bomba de agua", priceCents: 98000 },
+    ]);
+    const second = await workshop.approveQuote(created.token, 2, evidence);
+
+    expect(second.approval.id).toBe("AP-0002");
+    expect(second.approval.quoteVersion).toBe(2);
+  });
+});
+
 describe("cambios de estado", () => {
   const statusWorkshop = () => {
     const clock = mutableClock("2026-11-02T18:00:00.000Z");

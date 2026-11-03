@@ -5,6 +5,8 @@ import { getWorkshop } from "@/service";
 import { formatDateTime, formatPromiseDate } from "@/ui/format";
 import { ORDER_STATUSES } from "@/workshop/types";
 
+import { ShareOrder } from "@/app/_components/share-order";
+
 export const metadata: Metadata = {
   title: "Tablero · Taller Don Ramiro",
 };
@@ -20,7 +22,11 @@ export default async function DashboardPage({
 
   const { creada, q } = await searchParams;
   const query = (q ?? "").trim();
-  const visible = await getWorkshop().searchOrders(query);
+  const workshop = getWorkshop();
+  const [visible, createdOrder] = await Promise.all([
+    workshop.searchOrders(query),
+    creada ? workshop.findByFolio(creada) : Promise.resolve(null),
+  ]);
   const hasOrders = query.length > 0 || visible.length > 0;
 
   const groups = ORDER_STATUSES.map((status) => ({
@@ -42,7 +48,20 @@ export default async function DashboardPage({
         </form>
       </header>
 
-      {creada ? (
+      {createdOrder ? (
+        <>
+          <p className="notice" role="status">
+            Orden <strong>{createdOrder.folio}</strong> creada. Comparte el
+            enlace con el cliente.
+          </p>
+          <ShareOrder
+            folio={createdOrder.folio}
+            token={createdOrder.token}
+            customerName={createdOrder.customer.name}
+            phone={createdOrder.customer.phone}
+          />
+        </>
+      ) : creada ? (
         <p className="notice" role="status">
           Orden <strong>{creada}</strong> creada. Ya aparece en el tablero.
         </p>
