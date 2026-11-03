@@ -51,7 +51,7 @@ export interface HistoryEntry {
 
 export interface OrderInput {
   customer: { name: string; phone: string };
-  vehicle: { plate: string; model: string };
+  vehicle: { plate: string; make: string; model: string };
   reportedIssue: string;
   internalNotes?: string;
   promisedAt?: string;

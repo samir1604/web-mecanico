@@ -4,10 +4,10 @@
 
 **Blocked by:** None (can start immediately).
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] Con la contraseña correcta se abre el panel; con la incorrecta se rechaza. La sesión vive en una cookie firmada, httpOnly y secure, y el panel exige sesión.
-- [ ] Crear una orden captura cliente, teléfono, marca, modelo, placa, falla reportada, fecha de ingreso, promesa opcional y notas internas.
-- [ ] Toda orden recibe un folio legible y secuencial, y un token aleatorio de 32 bytes distinto del folio.
-- [ ] El tablero muestra las órdenes agrupadas por estado y funciona en un viewport de teléfono con controles táctiles grandes.
-- [ ] El dominio se prueba a través de su interfaz pública con store en memoria y reloj falso; los contratos HTTP cubren login correcto/incorrecto y acceso sin sesión.
+- [x] Con la contraseña correcta se abre el panel; con la incorrecta se rechaza. La sesión vive en una cookie firmada, httpOnly y secure, y el panel exige sesión.
+- [x] Crear una orden captura cliente, teléfono, marca, modelo, placa, falla reportada, fecha de ingreso, promesa opcional y notas internas.
+- [x] Toda orden recibe un folio legible y secuencial, y un token aleatorio de 32 bytes distinto del folio.
+- [x] El tablero muestra las órdenes agrupadas por estado y funciona en un viewport de teléfono con controles táctiles grandes.
+- [x] El dominio se prueba a través de su interfaz pública con store en memoria y reloj falso; los contratos HTTP cubren login correcto/incorrecto y acceso sin sesión.

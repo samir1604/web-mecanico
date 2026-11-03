@@ -99,6 +99,10 @@ export function createWorkshop({ store, clock, ids }: WorkshopDeps) {
       return store.getByFolio(folio);
     },
 
+    async listOrders(): Promise<Order[]> {
+      return store.list();
+    },
+
     async createQuote(folio: string, items: LineItem[]): Promise<Quote> {
       assertItems(items);
       const order = await load(folio);

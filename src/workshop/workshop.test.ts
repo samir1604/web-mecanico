@@ -15,7 +15,7 @@ const newWorkshop = (token = "token-de-prueba") =>
 
 const input = {
   customer: { name: "Juan Pérez", phone: "+525512345678" },
-  vehicle: { plate: "ABC-123", model: "Nissan Versa 2018" },
+  vehicle: { plate: "ABC-123", make: "Nissan", model: "Versa 2018" },
   reportedIssue: "Ruido en la suspensión delantera",
 };
 

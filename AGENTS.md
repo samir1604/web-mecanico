@@ -4,9 +4,13 @@
 
 `web-mecanico` is a **Next.js 16 app** (App Router, TypeScript, Turbopack) for a mechanic shop, at MVP scaffold stage.
 
-- `src/app/` — UI and routes (App Router), `lang="es-MX"`
+- `src/app/` — UI and routes (App Router), `lang="es-MX"`: `/login`, `/` (tablero), `/ordenes/nueva`, y route handlers en `src/app/api/`
+- `src/auth/` — cookie de sesión firmada con HMAC, comparación de contraseña sin filtrar tiempos, guard de páginas
+- `src/http/` — validación de payloads y tests de contrato de los route handlers
 - `src/workshop/` — the pure domain module: types, ports (`Store`, `Clock`), errors, operations. Framework-free, tested with Vitest.
 - `src/store/` — the in-memory adapter of the `Store` port (Redis comes later)
+- `src/service.ts` — composition root: memory store + real clock, singleton per process (ticket 02 swaps in Redis)
+- `src/ui/` — formatting helpers (fechas en `America/Mexico_City`, USD)
 - `.agents/specs/` — specs and tickets (project convention, see below)
 - `docs/brand/` — brand tokens; `src/app/layout.tsx` imports `docs/brand/tokens.css` directly
 - `skills-lock.json` — pins every installed skill to `mattpocock/skills` by SHA-256 `computedHash`
@@ -15,7 +19,7 @@ Local-only and git-ignored: `.agents/skills/`, `lessons/`, `reference/`, `assets
 
 `examples/workshop-tdd/` is a dependency-free Node 24 + `node:test` sandbox. The root `tsconfig.json` excludes `examples`, and `vitest.config.mts` only includes `src/**/*.test.ts`, so the two test worlds do not collide.
 
-There is no ESLint config or CI yet. Do not assume commands — verify before running anything.
+There is no ESLint config or CI yet. Do not assume commands — verify before running anything. Local runs need `.env.local` with `OWNER_PASSWORD` and `SESSION_SECRET` (see `.env.example`); without them the login rejects every request.
 
 ## Commands
 
@@ -45,3 +49,13 @@ Project convention (overrides the skills' `.scratch/` default): specs live in `.
 `setup-matt-pocock-skills` has never been executed: there is no `docs/agents/` (issue tracker, triage labels, domain layout), no `GLOSSARY.md`, and no `docs/adr/`. The engineering flows (`grill-with-docs`, `to-spec`, `to-tickets`, `triage`, `wayfinder`) expect those files. Run the setup skill before creating them ad hoc.
 
 The repo has a local git repository (`main`) and a public remote at `https://github.com/samir1604/web-mecanico`. The setup skill's GitHub/GitLab tracker option needs the `gh` CLI authenticated (`gh` lives at `%LOCALAPPDATA%\gh-cli\bin\gh.exe`, not always on PATH); until it is used, the local-markdown tracker works and stores issues under `.scratch/<feature>/issues/`.
+
+<!-- BEGIN:nextjs-agent-rules -->
+
+## This is NOT the Next.js you know
+
+This version has breaking changes — APIs, conventions, and file structure may all differ from your training data. Read the relevant guide in `node_modules/next/dist/docs/` (resolved from this file's directory; in monorepos the `next` package may not be visible from the repo root) before writing any code. Heed deprecation notices.
+
+This block is written and re-added by `next dev` — verify at `node_modules/next/dist/server/lib/generate-agent-files.js`. Removing it from a diff only re-creates the uncommitted change; committing it with your work keeps the tree clean.
+
+<!-- END:nextjs-agent-rules -->

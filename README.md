@@ -2,7 +2,7 @@
 
 Aplicación web para que un taller mecánico comparta el estado de cada orden con su cliente mediante un enlace, sin llamadas telefónicas y con aprobación de cotizaciones verificable.
 
-> **Estado:** MVP en construcción. El dominio (órdenes y cotizaciones) está implementado y probado. Persistencia en Redis, HTTP y página del cliente siguen pendientes.
+> **Estado:** el esqueleto caminante ya funciona en local: login con contraseña única, alta de orden y tablero agrupado por estado. Persistencia en Redis, cotizaciones, página del cliente y evidencia de aprobación siguen pendientes.
 
 ## El problema
 
@@ -36,7 +36,7 @@ Cuando aparece una reparación adicional, el trabajo se detiene hasta que el cli
 | Persistencia | Upstash Redis (una llave por orden + índices) |
 | Interfaz | Web responsive mobile-first; sin PWA ni service worker |
 | Idioma y moneda | Español de México, USD, zona `America/Mexico_City` |
-| Pruebas | Vitest sobre el módulo de dominio |
+| Pruebas | Vitest sobre el dominio y los contratos HTTP |
 
 La arquitectura separa un módulo de dominio puro (`workshop`) de los adaptadores de persistencia, HTTP y UI. Las reglas de negocio se prueban sin Redis ni servidor.
 
