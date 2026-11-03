@@ -1,25 +1,22 @@
-import { Redis } from "@upstash/redis";
+import { redisFromEnv } from "@/store/redis-store";
 
 /**
  * Diagnóstico de configuración. No expone valores: solo si cada variable
  * existe y si Redis responde. Se puede borrar cuando el deploy esté estable.
  */
 export async function GET() {
-  const url = process.env.UPSTASH_REDIS_REST_URL ?? "";
-  const token = process.env.UPSTASH_REDIS_REST_TOKEN ?? "";
-
   const env = {
     ownerPassword: Boolean(process.env.OWNER_PASSWORD),
     sessionSecret: Boolean(process.env.SESSION_SECRET),
-    upstashUrl: Boolean(url),
-    upstashToken: Boolean(token),
-    upstashUrlLooksValid: /^https:\/\/[^\s"']+$/.test(url),
+    upstashUrl: Boolean(process.env.UPSTASH_REDIS_REST_URL),
+    upstashToken: Boolean(process.env.UPSTASH_REDIS_REST_TOKEN),
   };
 
   let redis = "not-configured";
-  if (env.upstashUrl && env.upstashToken) {
+  const client = redisFromEnv();
+  if (client) {
     try {
-      await Redis.fromEnv().ping();
+      await client.ping();
       redis = "ok";
     } catch (error) {
       redis = `error:${error instanceof Error ? error.name : "unknown"}`;

@@ -1,5 +1,5 @@
 import { MemoryStore } from "@/store/memory-store";
-import { RedisStore } from "@/store/redis-store";
+import { RedisStore, redisFromEnv } from "@/store/redis-store";
 import type { Store } from "@/workshop/ports";
 import { createWorkshop, type Workshop } from "@/workshop/workshop";
 
@@ -21,11 +21,9 @@ function buildStore(): Store {
     return new MemoryStore();
   }
 
-  const url = process.env.UPSTASH_REDIS_REST_URL;
-  const token = process.env.UPSTASH_REDIS_REST_TOKEN;
-
-  if (url && token) {
-    return new RedisStore();
+  const redis = redisFromEnv();
+  if (redis) {
+    return new RedisStore(redis);
   }
 
   if (process.env.NODE_ENV === "production") {

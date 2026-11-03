@@ -21,10 +21,28 @@ redis.call('SET', KEYS[1], ARGV[1])
 return 1
 `;
 
+/** Acepta valores pegados con comillas desde un panel o un `.env`. */
+function unquote(value: string | undefined): string {
+  const trimmed = (value ?? "").trim();
+  const match = trimmed.match(/^(["'])([\s\S]*)\1$/);
+  return match ? match[2].trim() : trimmed;
+}
+
+/**
+ * Crea el cliente solo si ambas credenciales existen. Devuelve `null` cuando
+ * faltan, para que quien componga el servicio decida el respaldo.
+ */
+export function redisFromEnv(): Redis | null {
+  const url = unquote(process.env.UPSTASH_REDIS_REST_URL);
+  const token = unquote(process.env.UPSTASH_REDIS_REST_TOKEN);
+  if (!url || !token) return null;
+  return new Redis({ url, token });
+}
+
 export class RedisStore implements Store {
   #redis: Redis;
 
-  constructor(redis: Redis = Redis.fromEnv()) {
+  constructor(redis: Redis) {
     this.#redis = redis;
   }
 
