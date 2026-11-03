@@ -1,0 +1,10 @@
+# Normaliza finales de línea en el repo; cada quien conserva su plataforma.
+* text=auto eol=lf
+
+# Binarios
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.webp binary
+*.ico binary
+*.pdf binary

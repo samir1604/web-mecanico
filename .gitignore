@@ -1,0 +1,38 @@
+# Dependencias
+node_modules/
+
+# Entorno y secretos
+.env
+.env.*
+!.env.example
+*.local
+
+# Builds y artefactos
+.next/
+out/
+dist/
+build/
+coverage/
+*.tsbuildinfo
+
+# Plataforma
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Editores
+.vscode/
+.idea/
+
+# Logs
+*.log
+
+# Espacio de aprendizaje local (no se publica en el remoto)
+.agents/skills/
+assets/
+examples/
+lessons/
+reference/
+MISSION.md
+NOTES.md
+RESOURCES.md
