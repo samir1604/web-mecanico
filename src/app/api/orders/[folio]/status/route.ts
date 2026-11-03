@@ -1,19 +1,9 @@
 import { sessionFromRequest } from "@/auth/session";
+import { httpStatusFor } from "@/http/domain-errors";
 import { json, redirectTo, unauthorized, wantsJson } from "@/http/responses";
 import { parseStatusChange } from "@/http/status-form";
 import { getWorkshop } from "@/service";
-import { isDomainError, type DomainError } from "@/workshop/errors";
-
-function httpStatusFor(error: DomainError): number {
-  switch (error.code) {
-    case "NOT_FOUND":
-      return 404;
-    case "VALIDATION":
-      return 422;
-    default:
-      return 409;
-  }
-}
+import { isDomainError } from "@/workshop/errors";
 
 export async function POST(
   request: Request,

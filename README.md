@@ -2,7 +2,7 @@
 
 Aplicación web para que un taller mecánico comparta el estado de cada orden con su cliente mediante un enlace, sin llamadas telefónicas y con aprobación de cotizaciones verificable.
 
-> **Estado:** el panel del dueño está desplegado en Vercel con persistencia real en Upstash Redis. Ya incluye creación de órdenes, tablero con búsqueda, detalle, cambios de estado, historial y página pública del cliente por enlace. Cotizaciones, compartir por WhatsApp y evidencia de aprobación siguen pendientes.
+> **Estado:** el panel del dueño está desplegado en Vercel con persistencia real en Upstash Redis. Ya incluye creación de órdenes, tablero con búsqueda, detalle, cambios de estado, historial, cotizaciones con partidas y página pública del cliente por enlace. Compartir por WhatsApp, aprobación/rechazo y evidencia verificable siguen pendientes.
 
 **Demo:** <https://web-mecanico.vercel.app> — el acceso es con la contraseña única del dueño; no se publica aquí.
 

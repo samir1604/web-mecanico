@@ -93,6 +93,19 @@ export interface PublicHistoryEntry {
  * Proyección segura de una orden para el enlace del cliente. Excluye notas
  * internas, teléfono, token, cotizaciones y cualquier dato de otras órdenes.
  */
+export interface PublicQuoteItem {
+  concept: string;
+  priceCents: number;
+}
+
+export interface PublicQuote {
+  version: number;
+  items: PublicQuoteItem[];
+  totalCents: number;
+  createdAt: string;
+  expiresAt: string;
+}
+
 export interface PublicOrder {
   folio: string;
   status: OrderStatus;
@@ -101,6 +114,7 @@ export interface PublicOrder {
   promisedAt: string | null;
   createdAt: string;
   history: PublicHistoryEntry[];
+  quote: PublicQuote | null;
 }
 
 export interface Order {

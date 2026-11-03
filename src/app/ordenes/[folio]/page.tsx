@@ -15,6 +15,7 @@ import {
   type HistoryEntry,
 } from "@/workshop/types";
 
+import { QuoteForm } from "./quote-form";
 import { StatusForm } from "./status-form";
 
 export const metadata: Metadata = {
@@ -34,11 +35,15 @@ export default async function OrderDetailPage({
   searchParams,
 }: {
   params: Promise<{ folio: string }>;
-  searchParams: Promise<{ cambio?: string; error?: string }>;
+  searchParams: Promise<{
+    cambio?: string;
+    cotizacion?: string;
+    error?: string;
+  }>;
 }) {
   await requireSession();
 
-  const [{ folio }, { cambio, error }] = await Promise.all([
+  const [{ folio }, { cambio, cotizacion, error }] = await Promise.all([
     params,
     searchParams,
   ]);
@@ -47,6 +52,9 @@ export default async function OrderDetailPage({
   if (!order) notFound();
 
   const terminal = isTerminalStatus(order.status);
+  const pendingQuote = order.quotes.find(
+    (quote) => quote.status === "pendiente",
+  );
   const nextStatuses = ORDER_STATUSES.filter(
     (status) => status !== order.status,
   );
@@ -66,6 +74,13 @@ export default async function OrderDetailPage({
       {cambio ? (
         <p className="notice" role="status">
           Estado actualizado a <strong>{order.status}</strong>.
+        </p>
+      ) : null}
+
+      {cotizacion ? (
+        <p className="notice" role="status">
+          Cotización creada. La orden pasó a{" "}
+          <strong>Esperando aprobación</strong>.
         </p>
       ) : null}
 
@@ -148,11 +163,12 @@ export default async function OrderDetailPage({
         </a>
       </p>
 
-      {order.quotes.length > 0 ? (
-        <section className="detail-card" aria-labelledby="cotizaciones">
-          <h2 id="cotizaciones" className="section-title">
-            Cotizaciones
-          </h2>
+      <section className="detail-card" aria-labelledby="cotizaciones">
+        <h2 id="cotizaciones" className="section-title">
+          Cotizaciones
+        </h2>
+
+        {order.quotes.length > 0 ? (
           <ul className="quote-list">
             {order.quotes.map((quote) => (
               <li key={quote.version}>
@@ -178,8 +194,25 @@ export default async function OrderDetailPage({
               </li>
             ))}
           </ul>
-        </section>
-      ) : null}
+        ) : (
+          <p className="muted">Todavía no hay cotizaciones.</p>
+        )}
+
+        {terminal ? (
+          <p className="alert" role="note">
+            La orden está cerrada. Reábrela antes de crear otra cotización.
+          </p>
+        ) : pendingQuote ? (
+          <p className="notice" role="status">
+            La cotización v{pendingQuote.version} está pendiente de aprobación.
+          </p>
+        ) : (
+          <div className="quote-create">
+            <h3 className="subsection-title">Nueva cotización</h3>
+            <QuoteForm folio={order.folio} />
+          </div>
+        )}
+      </section>
 
       <section className="detail-card" aria-labelledby="cambiar-estado">
         <h2 id="cambiar-estado" className="section-title">

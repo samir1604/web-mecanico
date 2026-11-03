@@ -3,6 +3,7 @@ import type { Metadata } from "next";
 import { getWorkshop } from "@/service";
 import {
   formatDateTime,
+  formatMoney,
   formatPromiseDate,
   formatStatusTransition,
 } from "@/ui/format";
@@ -58,6 +59,8 @@ export default async function PublicOrderPage({
     throw error;
   }
 
+  const pendingQuote = order.quote;
+
   return (
     <main className="public-shell">
       <header className="public-head">
@@ -77,6 +80,36 @@ export default async function PublicOrderPage({
           </p>
         ) : null}
       </section>
+
+      {pendingQuote ? (
+        <section
+          className="quote-card"
+          aria-labelledby="cotizacion-pendiente"
+        >
+          <p className="eyebrow">Cotización pendiente</p>
+          <div className="order-head">
+            <h2 id="cotizacion-pendiente">Reparación adicional</h2>
+            <span className="badge">Versión {pendingQuote.version}</span>
+          </div>
+
+          <ul className="item-list">
+            {pendingQuote.items.map((item, index) => (
+              <li key={`${pendingQuote.version}-${index}`}>
+                <span>{item.concept}</span>
+                <span>{formatMoney(item.priceCents)}</span>
+              </li>
+            ))}
+          </ul>
+
+          <p className="quote-total">
+            Total: <strong>{formatMoney(pendingQuote.totalCents)}</strong>
+          </p>
+          <p className="field-hint">
+            Vence el {formatDateTime(pendingQuote.expiresAt)}. El taller te
+            pedirá tu aprobación.
+          </p>
+        </section>
+      ) : null}
 
       <section className="detail-card" aria-labelledby="tu-vehiculo">
         <h2 id="tu-vehiculo" className="section-title">

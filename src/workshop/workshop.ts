@@ -161,6 +161,10 @@ export function createWorkshop({ store, clock, ids }: WorkshopDeps) {
         );
       }
 
+      const pending = order.quotes.find(
+        (quote) => quote.status === "pendiente",
+      );
+
       return {
         folio: order.folio,
         status: order.status,
@@ -169,6 +173,18 @@ export function createWorkshop({ store, clock, ids }: WorkshopDeps) {
         promisedAt: order.promisedAt,
         createdAt: order.createdAt,
         history: order.history.map(({ at, from, to }) => ({ at, from, to })),
+        quote: pending
+          ? {
+              version: pending.version,
+              items: pending.items.map(({ concept, priceCents }) => ({
+                concept,
+                priceCents,
+              })),
+              totalCents: pending.totalCents,
+              createdAt: pending.createdAt,
+              expiresAt: pending.expiresAt,
+            }
+          : null,
       };
     },
 
@@ -252,6 +268,13 @@ export function createWorkshop({ store, clock, ids }: WorkshopDeps) {
     async createQuote(folio: string, items: LineItem[]): Promise<Quote> {
       assertItems(items);
       const order = await load(folio);
+
+      if (isTerminalStatus(order.status)) {
+        throw new DomainError(
+          "INVALID_TRANSITION",
+          `La orden está en «${order.status}». Reábrela antes de cotizar.`,
+        );
+      }
 
       const now = clock.now();
       const pending = order.quotes.find(

@@ -106,7 +106,29 @@ describe("cotizaciones", () => {  test("crear mueve a Esperando aprobación y ca
 
     await expect(
       workshop.createQuote(created.folio, items),
-    ).rejects.toBeInstanceOf(DomainError);
+    ).rejects.toMatchObject({ code: "INVALID_TRANSITION" });
+  });
+
+  test("acepta una sola partida", async () => {
+    const workshop = newWorkshop();
+    const created = await workshop.createOrder(input);
+
+    const quote = await workshop.createQuote(created.folio, [
+      { concept: "Alineación", priceCents: 35050 },
+    ]);
+
+    expect(quote.items).toHaveLength(1);
+    expect(quote.totalCents).toBe(35050);
+  });
+
+  test("no permite cotizar una orden terminal", async () => {
+    const workshop = newWorkshop();
+    const created = await workshop.createOrder(input);
+    await workshop.changeStatus(created.folio, "Entregado");
+
+    await expect(
+      workshop.createQuote(created.folio, items),
+    ).rejects.toMatchObject({ code: "INVALID_TRANSITION" });
   });
 });
 
@@ -300,6 +322,22 @@ describe("enlace público", () => {
     await expect(
       workshop.publicOrderByToken(created.token),
     ).rejects.toMatchObject({ code: "LINK_EXPIRED" });
+  });
+
+  test("incluye la cotización pendiente con partidas y total", async () => {
+    const { workshop } = publicWorkshop();
+    const created = await workshop.createOrder(input);
+    await workshop.createQuote(created.folio, items);
+
+    const publicOrder = await workshop.publicOrderByToken(created.token);
+
+    expect(publicOrder.quote).toEqual({
+      version: 1,
+      items,
+      totalCents: 165000,
+      createdAt: "2026-11-02T18:00:00.000Z",
+      expiresAt: "2026-11-09T18:00:00.000Z",
+    });
   });
 
   test("no mezcla datos de otra orden", async () => {

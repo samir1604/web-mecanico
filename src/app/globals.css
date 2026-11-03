@@ -405,6 +405,53 @@ select:focus {
 }
 
 /* Detalle de orden */
+.subsection-title {
+  margin: 1.5rem 0 0.85rem;
+  font-size: var(--font-size-base);
+  font-weight: var(--font-weight-bold);
+}
+
+.quote-create {
+  margin-top: 1.5rem;
+  padding-top: 1.25rem;
+  border-top: 1px solid var(--color-surface-muted);
+}
+
+.quote-form {
+  margin-top: 1rem;
+}
+
+.quote-rows {
+  display: grid;
+  gap: 1rem;
+}
+
+.quote-row {
+  gap: 0.75rem;
+  padding: 1rem;
+  border: 1px solid var(--color-surface-muted);
+  background: var(--color-surface);
+}
+
+.button--small {
+  min-height: 36px;
+  padding: 0.35rem 0.8rem;
+  font-size: var(--font-size-sm);
+  justify-self: start;
+}
+
+.quote-card {
+  margin-bottom: 1.5rem;
+  padding: 1.25rem 1.1rem 1.4rem;
+  background: #fffbea;
+  border: 1px solid var(--color-warning, #b7791f);
+  border-left: 5px solid var(--color-warning, #b7791f);
+}
+
+.quote-card h2 {
+  font-size: var(--font-size-xl);
+}
+
 .detail-actions {
   margin: 0 0 1.5rem;
 }
