@@ -21,6 +21,8 @@ Local-only and git-ignored: `.agents/skills/`, `lessons/`, `reference/`, `assets
 
 There is no ESLint config or CI yet. Do not assume commands — verify before running anything. Local runs need `.env.local` with `OWNER_PASSWORD` and `SESSION_SECRET` (see `.env.example`); without them the login rejects every request.
 
+Production runs at <https://web-mecanico.vercel.app> (stable alias) and deploys from `main` through the Vercel GitHub integration. The `web-mecanico-<hash>-...vercel.app` URLs are frozen per deployment. All four env vars (`OWNER_PASSWORD`, `SESSION_SECRET`, `UPSTASH_REDIS_REST_URL`, `UPSTASH_REDIS_REST_TOKEN`) must exist for Production and Preview; editing them requires a redeploy. `GET /api/health` reports env presence, deployed commit and Redis reachability without leaking values — check it first when production misbehaves. Vercel stores env values literally, so `redisFromEnv()` sanitizes accidental quotes/escapes around the Upstash credentials.
+
 ## Commands
 
 ```bash

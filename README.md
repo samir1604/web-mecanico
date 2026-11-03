@@ -2,7 +2,9 @@
 
 Aplicación web para que un taller mecánico comparta el estado de cada orden con su cliente mediante un enlace, sin llamadas telefónicas y con aprobación de cotizaciones verificable.
 
-> **Estado:** el panel funciona en local con persistencia real en Upstash Redis (verificada tras reiniciar el proceso). Despliegue en Vercel, cotizaciones, página del cliente y evidencia de aprobación siguen pendientes.
+> **Estado:** el panel del dueño está desplegado en Vercel con persistencia real en Upstash Redis. Cotizaciones, página del cliente y evidencia de aprobación siguen pendientes.
+
+**Demo:** <https://web-mecanico.vercel.app> — el acceso es con la contraseña única del dueño; no se publica aquí.
 
 ## El problema
 
@@ -39,6 +41,23 @@ Cuando aparece una reparación adicional, el trabajo se detiene hasta que el cli
 | Pruebas | Vitest sobre el dominio y los contratos HTTP |
 
 La arquitectura separa un módulo de dominio puro (`workshop`) de los adaptadores de persistencia, HTTP y UI. Las reglas de negocio se prueban sin Redis ni servidor.
+
+## Despliegue
+
+El repositorio está conectado a Vercel por GitHub: cada push a `main` despliega a <https://web-mecanico.vercel.app>. La URL con hash (`web-mecanico-<hash>-...vercel.app`) es de un deployment concreto y no recibe actualizaciones; usa siempre el dominio estable.
+
+Variables necesarias en Vercel (Production y Preview):
+
+| Variable | Valor |
+| --- | --- |
+| `OWNER_PASSWORD` | contraseña única del dueño, larga y aleatoria en producción |
+| `SESSION_SECRET` | secreto HMAC (genera uno con el comando de `.env.example`) |
+| `UPSTASH_REDIS_REST_URL` | URL REST del Redis de Upstash |
+| `UPSTASH_REDIS_REST_TOKEN` | token REST del mismo Redis |
+
+Los cambios de variables solo aplican a deployments nuevos: después de editarlas hay que redesplegar. Pega los valores sin comillas; aun así, la app tolera comillas y espacios accidentales.
+
+`GET /api/health` responde sin exponer secretos: qué variables existen, el commit desplegado y si Redis contesta (`"redis":"ok"`). Es la forma más rápida de diagnosticar un despliegue.
 
 ## Qué hay en este repositorio
 
