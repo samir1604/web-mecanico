@@ -2,7 +2,9 @@ import type { Metadata } from "next";
 
 import { requireSession } from "@/auth/guard";
 import { getWorkshop } from "@/service";
-import { formatDateTime, formatPromiseDate, ORDER_STATUSES } from "@/ui/format";
+import { formatDateTime, formatPromiseDate } from "@/ui/format";
+import { searchOrders } from "@/ui/search";
+import { ORDER_STATUSES } from "@/workshop/types";
 
 export const metadata: Metadata = {
   title: "Tablero · Taller Don Ramiro",
@@ -13,18 +15,21 @@ export const dynamic = "force-dynamic";
 export default async function DashboardPage({
   searchParams,
 }: {
-  searchParams: Promise<{ creada?: string }>;
+  searchParams: Promise<{ creada?: string; q?: string }>;
 }) {
   await requireSession();
 
-  const [{ creada }, orders] = await Promise.all([
+  const [{ creada, q }, orders] = await Promise.all([
     searchParams,
     getWorkshop().listOrders(),
   ]);
 
+  const query = (q ?? "").trim();
+  const visible = searchOrders(orders, query);
+
   const groups = ORDER_STATUSES.map((status) => ({
     status,
-    orders: orders.filter((order) => order.status === status),
+    orders: visible.filter((order) => order.status === status),
   })).filter((group) => group.orders.length > 0);
 
   return (
@@ -65,46 +70,86 @@ export default async function DashboardPage({
               + Nueva orden
             </a>
             <span className="muted count">
-              {orders.length} {orders.length === 1 ? "orden" : "órdenes"}
+              {visible.length} {visible.length === 1 ? "orden" : "órdenes"}
+              {query ? ` de ${orders.length}` : ""}
             </span>
           </div>
 
-          {groups.map((group) => (
-            <section
-              className="status-group"
-              key={group.status}
-              aria-labelledby={`grupo-${group.status}`}
-            >
-              <div className="group-head">
-                <h2 id={`grupo-${group.status}`}>{group.status}</h2>
-                <span className="count">{group.orders.length}</span>
-              </div>
+          <form className="search-bar" action="/" method="get" role="search">
+            <input
+              type="search"
+              name="q"
+              defaultValue={query}
+              placeholder="Placa o nombre del cliente"
+              aria-label="Buscar por placa o nombre del cliente"
+            />
+            <button className="button" type="submit">
+              Buscar
+            </button>
+          </form>
 
-              <div className="order-list">
-                {group.orders.map((order) => (
-                  <article className="order-card" key={order.folio}>
-                    <div className="order-head">
-                      <span className="folio">{order.folio}</span>
-                      <span className="plate">{order.vehicle.plate}</span>
-                    </div>
-                    <h3>{order.customer.name}</h3>
-                    <p className="muted">
-                      {order.vehicle.make} {order.vehicle.model}
-                    </p>
-                    <p className="issue">{order.reportedIssue}</p>
-                    <p className="meta">
-                      Ingreso: {formatDateTime(order.createdAt)}
-                    </p>
-                    {order.promisedAt ? (
-                      <p className="meta">
-                        Promesa: {formatPromiseDate(order.promisedAt)}
-                      </p>
-                    ) : null}
-                  </article>
-                ))}
-              </div>
+          {query ? (
+            <p className="search-summary muted">
+              Resultados para «{query}».{" "}
+              <a href="/">Limpiar búsqueda</a>
+            </p>
+          ) : null}
+
+          {groups.length === 0 ? (
+            <section className="empty">
+              <h2>Sin resultados</h2>
+              <p className="muted">
+                No hay órdenes que coincidan con «{query}». Prueba con otra
+                placa o nombre.
+              </p>
+              <a className="button button--ghost" href="/">
+                Ver todas
+              </a>
             </section>
-          ))}
+          ) : (
+            groups.map((group) => (
+              <section
+                className="status-group"
+                key={group.status}
+                aria-labelledby={`grupo-${group.status}`}
+              >
+                <div className="group-head">
+                  <h2 id={`grupo-${group.status}`}>{group.status}</h2>
+                  <span className="count">{group.orders.length}</span>
+                </div>
+
+                <div className="order-list">
+                  {group.orders.map((order) => (
+                    <a
+                      className="order-card"
+                      key={order.folio}
+                      href={`/ordenes/${order.folio}`}
+                      aria-label={`Ver detalle de la orden ${order.folio}, ${order.customer.name}`}
+                    >
+                      <div className="order-head">
+                        <span className="folio">{order.folio}</span>
+                        <span className="plate">{order.vehicle.plate}</span>
+                      </div>
+                      <h3>{order.customer.name}</h3>
+                      <p className="muted">
+                        {order.vehicle.make} {order.vehicle.model}
+                      </p>
+                      <p className="issue">{order.reportedIssue}</p>
+                      <p className="meta">
+                        Ingreso: {formatDateTime(order.createdAt)}
+                      </p>
+                      {order.promisedAt ? (
+                        <p className="meta">
+                          Promesa: {formatPromiseDate(order.promisedAt)}
+                        </p>
+                      ) : null}
+                      <p className="more">Ver detalle →</p>
+                    </a>
+                  ))}
+                </div>
+              </section>
+            ))
+          )}
         </>
       )}
     </main>

@@ -2,7 +2,15 @@ import { randomBytes } from "node:crypto";
 
 import { DomainError } from "./errors";
 import { RevisionConflict, type Clock, type Store } from "./ports";
-import type { LineItem, Order, OrderInput, Quote } from "./types";
+import {
+  isOrderStatus,
+  isTerminalStatus,
+  type LineItem,
+  type Order,
+  type OrderInput,
+  type OrderStatus,
+  type Quote,
+} from "./types";
 
 const QUOTE_LIFETIME_MS = 7 * 24 * 60 * 60 * 1000;
 
@@ -115,6 +123,56 @@ export function createWorkshop({ store, clock, ids }: WorkshopDeps) {
 
     async listOrders(): Promise<Order[]> {
       return store.list();
+    },
+
+    async changeStatus(
+      folio: string,
+      status: OrderStatus,
+      note?: string,
+      options: { correction?: boolean } = {},
+    ): Promise<Order> {
+      if (!isOrderStatus(status)) {
+        throw new DomainError("VALIDATION", "Elige un estado válido.");
+      }
+
+      const order = await load(folio);
+
+      if (order.status === status) {
+        throw new DomainError(
+          "VALIDATION",
+          `La orden ya está en «${status}».`,
+        );
+      }
+
+      if (isTerminalStatus(order.status) && !options.correction) {
+        throw new DomainError(
+          "INVALID_TRANSITION",
+          `La orden está en «${order.status}». Confirma una corrección manual para cambiar el estado.`,
+        );
+      }
+
+      const now = clock.now();
+      const expectedRev = order.rev;
+      const from = order.status;
+      const cleanNote = note?.trim();
+
+      order.status = status;
+      if (status === "Entregado") {
+        order.deliveredAt = now.toISOString();
+      } else if (from === "Entregado") {
+        order.deliveredAt = null;
+      }
+      order.rev = expectedRev + 1;
+      order.history.push({
+        at: now.toISOString(),
+        from,
+        to: status,
+        author: "dueño",
+        ...(cleanNote ? { note: cleanNote } : {}),
+      });
+
+      await persist(order, expectedRev);
+      return structuredClone(order);
     },
 
     async createQuote(folio: string, items: LineItem[]): Promise<Quote> {

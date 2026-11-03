@@ -6,6 +6,16 @@ import { createWorkshop } from "./workshop";
 
 const fixedClock = (iso: string) => ({ now: () => new Date(iso) });
 
+const mutableClock = (iso: string) => {
+  let current = new Date(iso);
+  return {
+    now: () => new Date(current),
+    advance(ms: number) {
+      current = new Date(current.getTime() + ms);
+    },
+  };
+};
+
 const newWorkshop = (token = "token-de-prueba") =>
   createWorkshop({
     store: new MemoryStore(),
@@ -55,8 +65,7 @@ describe("crear orden", () => {
   });
 });
 
-describe("cotizaciones", () => {
-  test("crear mueve a Esperando aprobación y calcula el total", async () => {
+describe("cotizaciones", () => {  test("crear mueve a Esperando aprobación y calcula el total", async () => {
     const workshop = newWorkshop();
     const created = await workshop.createOrder(input);
 
@@ -98,5 +107,111 @@ describe("cotizaciones", () => {
     await expect(
       workshop.createQuote(created.folio, items),
     ).rejects.toBeInstanceOf(DomainError);
+  });
+});
+
+describe("cambios de estado", () => {
+  const statusWorkshop = () => {
+    const clock = mutableClock("2026-11-02T18:00:00.000Z");
+    const workshop = createWorkshop({
+      store: new MemoryStore(),
+      clock,
+      ids: { token: () => "token-de-prueba" },
+    });
+    return { workshop, clock };
+  };
+
+  test("registra autor, fecha y nota, y mueve la orden", async () => {
+    const { workshop, clock } = statusWorkshop();
+    const created = await workshop.createOrder(input);
+
+    clock.advance(60_000);
+    const updated = await workshop.changeStatus(
+      created.folio,
+      "En diagnóstico",
+      "Revisión inicial en el elevador",
+    );
+
+    expect(updated.status).toBe("En diagnóstico");
+
+    const reloaded = await workshop.findByFolio(created.folio);
+    expect(reloaded?.status).toBe("En diagnóstico");
+    expect(reloaded?.history).toHaveLength(2);
+    expect(reloaded?.history.at(-1)).toEqual({
+      at: "2026-11-02T18:01:00.000Z",
+      from: "Recibido",
+      to: "En diagnóstico",
+      author: "dueño",
+      note: "Revisión inicial en el elevador",
+    });
+  });
+
+  test("rechaza un estado desconocido o el mismo estado actual", async () => {
+    const { workshop } = statusWorkshop();
+    const created = await workshop.createOrder(input);
+
+    await expect(
+      workshop.changeStatus(created.folio, "Pendiente" as never),
+    ).rejects.toMatchObject({ code: "VALIDATION" });
+
+    await expect(
+      workshop.changeStatus(created.folio, "Recibido"),
+    ).rejects.toMatchObject({ code: "VALIDATION" });
+
+    const reloaded = await workshop.findByFolio(created.folio);
+    expect(reloaded?.history).toHaveLength(1);
+  });
+
+  test("Entregado es terminal salvo corrección manual explícita", async () => {
+    const { workshop } = statusWorkshop();
+    const created = await workshop.createOrder(input);
+
+    const delivered = await workshop.changeStatus(created.folio, "Entregado");
+    expect(delivered.status).toBe("Entregado");
+    expect(delivered.deliveredAt).not.toBeNull();
+
+    await expect(
+      workshop.changeStatus(created.folio, "En reparación"),
+    ).rejects.toMatchObject({ code: "INVALID_TRANSITION" });
+
+    const corrected = await workshop.changeStatus(
+      created.folio,
+      "En reparación",
+      "El cliente regresó el auto",
+      { correction: true },
+    );
+
+    expect(corrected.status).toBe("En reparación");
+    expect(corrected.deliveredAt).toBeNull();
+    expect(corrected.history.at(-1)).toMatchObject({
+      from: "Entregado",
+      to: "En reparación",
+      note: "El cliente regresó el auto",
+    });
+  });
+
+  test("cancelar conserva el historial y deja la orden terminal", async () => {
+    const { workshop } = statusWorkshop();
+    const created = await workshop.createOrder(input);
+    await workshop.changeStatus(created.folio, "En diagnóstico");
+
+    const cancelled = await workshop.changeStatus(
+      created.folio,
+      "Cancelado",
+      "El cliente decidió no repararlo",
+    );
+
+    expect(cancelled.status).toBe("Cancelado");
+    expect(cancelled.history).toHaveLength(3);
+    expect(cancelled.history.at(-1)).toMatchObject({
+      from: "En diagnóstico",
+      to: "Cancelado",
+      author: "dueño",
+      note: "El cliente decidió no repararlo",
+    });
+
+    await expect(
+      workshop.changeStatus(created.folio, "Recibido"),
+    ).rejects.toMatchObject({ code: "INVALID_TRANSITION" });
   });
 });

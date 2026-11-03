@@ -8,6 +8,29 @@ export type OrderStatus =
   | "Cancelado"
   | "Rechazado";
 
+export const ORDER_STATUSES = [
+  "Recibido",
+  "En diagnóstico",
+  "Esperando aprobación",
+  "En reparación",
+  "Listo para entrega",
+  "Entregado",
+  "Cancelado",
+  "Rechazado",
+] as const satisfies readonly OrderStatus[];
+
+export const isOrderStatus = (value: string): value is OrderStatus =>
+  (ORDER_STATUSES as readonly string[]).includes(value);
+
+/** Estados que cierran la orden; solo una corrección explícita los reabre. */
+export const TERMINAL_ORDER_STATUSES: readonly OrderStatus[] = [
+  "Entregado",
+  "Cancelado",
+];
+
+export const isTerminalStatus = (status: OrderStatus): boolean =>
+  TERMINAL_ORDER_STATUSES.includes(status);
+
 export type QuoteStatus =
   | "pendiente"
   | "aprobada"

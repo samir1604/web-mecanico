@@ -1,5 +1,3 @@
-import type { OrderStatus } from "@/workshop/types";
-
 const dateTime = new Intl.DateTimeFormat("es-MX", {
   timeZone: "America/Mexico_City",
   dateStyle: "medium",
@@ -24,14 +22,3 @@ export const formatPromiseDate = (value: string): string =>
   dateOnly.format(new Date(`${value}T00:00:00.000Z`));
 
 export const formatMoney = (cents: number): string => money.format(cents / 100);
-
-export const ORDER_STATUSES: OrderStatus[] = [
-  "Recibido",
-  "En diagnóstico",
-  "Esperando aprobación",
-  "En reparación",
-  "Listo para entrega",
-  "Entregado",
-  "Cancelado",
-  "Rechazado",
-];
